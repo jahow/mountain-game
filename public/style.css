@@ -12,15 +12,97 @@ body {
 }
 
 header {
+	font-family: dosis;
 }
 	header h1 {
 		color: rgba(255, 255, 255, 0.49);;
 		text-transform: uppercase;
-		font-size: 1.2em;
+		font-size: 4em;
+	    margin: 0;
+    	text-align: center;
 	}
 	header strong {
 		color: white;
 	}
 	header h2 {
-		color: gray;
+	    color: rgba(0, 0, 0, 0.28);
+	    font-size: 1.6em;
+	    margin: 0;
+	    text-align: center;
+	    line-height: 0.4em;
+	    letter-spacing: 0.17em;
+	    font-family: open sans;
+	}
+
+#gameview {
+	position: absolute;
+	top: 200px;
+	width: 100%;
+}
+
+.portrait {
+	position: absolute;
+    cursor: pointer;
+    width: 80px;
+    height: 80px;
+    border-radius: 100px;
+    background-position: center;
+    background-size: cover;
+    border: 8px solid #B16169;
+    box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.25);
+    margin: 0px;
+    transition:
+    	width 0.2s ease-in-out,
+    	height 0.2s ease-in-out,
+    	box-shadow 0.2s ease-in-out,
+    	margin 0.2s ease-in-out;
+}
+	.portrait:before {
+		position: relative;
+		content: "";
+		display: block;
+	    width: 80px;
+	    height: 80px;
+    	border-radius: 100px;
+	    background-color: white;
+	    opacity: 0;
+	    transition: opacity 0.2s ease-in-out;
+	}
+	.portrait:hover {
+		width: 80px;
+		height: 80px;
+		margin-left: 0px;
+		margin-top: -4px;
+    	box-shadow: 0px 9px 10px rgba(0, 0, 0, 0.35);
+	}
+	.portrait:hover:before {
+		opacity: 0.15;
+	}
+
+	.portrait p {
+	    font-size: 0.7em;
+	    margin: 0;
+	    position: absolute;
+	    bottom: -40px;
+		left: 0px;
+	    text-align: left;
+	    width: 100%;
+	    color: rgba(255, 255, 255, 0.73);
+	    white-space: nowrap;
+	    font-family: roboto mono;
+	}
+
+#background {
+	width: 100%;
+}
+
+	#background svg {
+		width: 100%;
+		height: 500px;
+	}
+
+	#background svg line {
+		stroke: white;
+		stroke-width: 8px;
+		stroke-linecap: round;
 	}
