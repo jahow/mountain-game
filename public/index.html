@@ -35,14 +35,14 @@
 		<div class="fade fade_top"></div>
 
 		<div id="portraits">
-			<div id="player_portrait_template no_momentum" class="portrait">
+			<div id="player_portrait_template" class="portrait no_momentum">
 				<div class="name">name</div>
 				<p>
 					&nbspalt: 4300m<br>
 					dist: 42315m
 				</p>
 				<svg viewBox="-100 -100 200 200" width="200" height="200">
-					<rect x="-15" y="-5" width="15" height="10" fill="red" /> 
+					<rect x="-20" y="-5" width="20" height="10" fill="red" /> 
 					<polygon points="0,0 0,10 10,0 0,-10 0,0" fill="red" />
 				</svg>
 				<div class="momentum"> +1</div>
@@ -254,6 +254,19 @@ function refreshPlayerPortraits() {
 		if(player_data.momentum > 0) {
 			player_portrait.removeClass('no_momentum');
 			player_portrait.find('.momentum').html('+'+player_data.momentum);
+
+			var scale =  1 + 0.3 * player_data.momentum;
+			player_portrait.find('svg rect').css('transform', 'scale(1,'+scale+')');
+			player_portrait.find('svg polygon').css('transform', 'scale('+scale+')');
+
+			var font_scale = 0.5 + 0.07 * player_data.momentum;
+			var width = 14 + 7 * scale;
+			// var right = -18 - 6*scale;
+			player_portrait.find('.momentum').css({
+				'font-size': font_scale+'em',
+				'width': width+'px'
+				// 'right': right+'px'
+			});
 		} else {
 			player_portrait.addClass('no_momentum');
 		}
