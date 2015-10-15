@@ -26,10 +26,12 @@
 			<svg viewBox="-2000 0 4000 500" preserveAspectRatio="xMidYMid slice">
 			</svg>
 
-			<div class="fade"></div>
-			<div class="fade fade_right"></div>
-
 		</div>
+
+		<div class="fade fade_left"></div>
+		<div class="fade fade_right"></div>
+		<div class="fade fade_bottom"></div>
+		<div class="fade fade_top"></div>
 
 		<div id="portraits">
 			<div id="player_portrait_template" class="portrait">
@@ -39,6 +41,7 @@
 				</p>
 			</div>
 		</div>
+
 
 	</div>
 
@@ -54,50 +57,29 @@ var DIST_PER_NODE = 100;	// meters between two nodes
 
 // BACKGROUND DISPLAY
 
-// height data
-//var height_data = [0,10,50,30,80,85,75,61,43,55,88,92,101,120,108,95];
-
 // current focus of the background curve & refresh
-var current_background_position = 0;	// given in dist coordinates
-var previous_background_position = 0;
+var current_background_position_x = 0;	// given in dist coordinates
+var previous_background_position_x = 0;
+var current_background_position_y = 0;
+var previous_background_position_y = 0;
 
-function setBackgroundPosition(pos) {
-	current_background_position = pos;
+function setBackgroundPosition(x_pos, y_pos) {
+	current_background_position_x = x_pos;
+	current_background_position_y = y_pos;
 	refreshBackgroundShapes();
+	refreshPlayerPortraits();
 }
 
 function refreshBackgroundShapes() {
 	// init
-	// var step_size = 50;
-	// var range = Math.floor(document.body.clientWidth / step_size / 2);
-	var range = 2000 / 50;
+	var range = 1000 / SEGMENT_SIZE;		// lines are displayed on a 2000px width
 	var svg = d3.select('#background svg');
 
 	// calc
-	var nearest_node = Math.round(current_background_position / SEGMENT_SIZE);
-	//var current_pos_shift = current_background_position - nearest_node * step_size;
+	var nearest_node = Math.round(current_background_position_x / SEGMENT_SIZE);
+	//var current_pos_shift = current_background_position_x - nearest_node * step_size;
 	var min_node = nearest_node - range;
 	var max_node = nearest_node + range;
-
-	/*
-	var shape;
-	for(var i=min_node; i<max_node; i++) {
-		if(!height_data[i]) { continue; }
-
-		// check if shape exist
-		shape = svg.select("line.node"+i);
-		if(shape.empty()) {
-			shape = svg.append('line')
-				.attr('stroke', 'white')
-				.attr('stroke-width', 8)
-				.attr('class', 'node'+i);
-		}
-		shape.attr('x1', current_background_position + step_size*i)
-			.attr('x2', current_background_position + step_size*(i+1))
-			.attr('y1', height_data[i])
-			.attr('y2', height_data[i+1]);
-	}
-	*/
 
 	// compute height data (gives an array of altitudes)
 	var height_data = computeHeightDataArray(min_node, max_node);
@@ -111,24 +93,25 @@ function refreshBackgroundShapes() {
 
 	// enter+update
 	lines
-		.attr('x1', function(d, i) { return (d.node)*SEGMENT_SIZE - previous_background_position; })
-		.attr('x2', function(d, i) { return (d.node+1)*SEGMENT_SIZE - previous_background_position; })
+		.attr('x1', function(d, i) { return computeLeftOffset((d.node)*SEGMENT_SIZE, true); })
+		.attr('x2', function(d, i) { return computeLeftOffset((d.node+1)*SEGMENT_SIZE, true); })
+		.attr('y1', function(d, i) { return computeTopOffset(d.start, true); })
+		.attr('y2', function(d, i) { return computeTopOffset(d.end, true); })
+		.transition()
 		.attr('y1', function(d, i) { return computeTopOffset(d.start); })
 		.attr('y2', function(d, i) { return computeTopOffset(d.end); })
-		.transition()
-		.attr('x1', function(d, i) { return (d.node)*SEGMENT_SIZE - current_background_position; })
-		.attr('x2', function(d, i) { return (d.node+1)*SEGMENT_SIZE - current_background_position; })
-		//.style('opacity', function(d, i) {
-		//	return Math.max(0, Math.min(1, 2 - 2.2*Math.abs(i+0.5-range)/range));
-		//});
+		.attr('x1', function(d, i) { return computeLeftOffset((d.node)*SEGMENT_SIZE); })
+		.attr('x2', function(d, i) { return computeLeftOffset((d.node+1)*SEGMENT_SIZE); })
 		.style('opacity', 1);
 
 	// exit
-	lines.exit().remove();
+	lines.exit().transition()
+		.attr('x1', function(d, i) { return (d.node)*SEGMENT_SIZE - current_background_position_x; })
+		.attr('x2', function(d, i) { return (d.node+1)*SEGMENT_SIZE - current_background_position_x; })
+		.style('opacity', 0.001).remove();
 
-	refreshPlayerPortraits();
-
-	previous_background_position = current_background_position;
+	previous_background_position_x = current_background_position_x;
+	previous_background_position_y = current_background_position_y;
 }
 
 // node_index must be an integer
@@ -138,11 +121,11 @@ function computeNodeHeight(node_index) {
 }
 
 // interpolates between 2 nodes
-// pos_x is expressed in node coordinates, ie each node is an integer: 0, 1, 2, 3...
+// pos_x is expressed in dist coordinates
 function computeHeight(pos_x) {
-	var node_low = Math.floor(pos_x);
-	var node_high = Math.ceil(pos_x);
-	var ratio = pos_x - node_low;	// between 0 and 1
+	var node_low = Math.floor(pos_x/SEGMENT_SIZE);
+	var node_high = Math.ceil(pos_x/SEGMENT_SIZE);
+	var ratio = pos_x/SEGMENT_SIZE - node_low;	// between 0 and 1
 	return (1-ratio) * computeNodeHeight(node_low) + ratio * computeNodeHeight(node_high);
 }
 
@@ -160,19 +143,21 @@ function computeHeightDataArray(min_node, max_node) {
 }
 
 // computes the 'top' CSS offset based on current game view and given altitude (pos_y)
-function computeTopOffset(pos_y) {
-	return 300 - pos_y;		// add vertical view shift
+function computeTopOffset(pos_y, previous) {
+	var offset = previous ? previous_background_position_y : current_background_position_y;
+	return 300 - pos_y + offset;		// add vertical view shift
 }
 // same for x pos
-function computeLeftOffset(pos_x) {
-	return pos_x * SEGMENT_SIZE - current_background_position;
+function computeLeftOffset(pos_x, previous) {
+	var offset = previous ? previous_background_position_x : current_background_position_x;
+	return pos_x - offset;
 }
 
 // PLAYER MANAGEMENT
 
 // list of players data: x_pos (ie distance), momentum, id, portrait (filename)
 // this list is constantly maintained by the server
-var current_player_id = 0;
+var current_player_id = 88;
 var players_array = [];
 
 // list of dom objects relative to player portraits
@@ -180,16 +165,18 @@ var dom_portraits_collection = {};
 
 // temp
 players_array.push({
-	x_pos: 1,
+	x_pos: 35,
 	momentum: 4,
 	id: 88,
-	portrait: 'portrait1.jpg'
+	portrait: 'portrait1.jpg',
+	color: 'rgb(177, 97, 105)'
 });
 players_array.push({
-	x_pos: 4,
+	x_pos: 172,
 	momentum: 8,
 	id: 2,
-	portrait: 'portrait2.jpg'
+	portrait: 'portrait2.jpg',
+	color: 'rgb(150, 112, 245)'
 });
 
 //refreshPlayerPortraits();
@@ -212,9 +199,26 @@ function refreshPlayerPortraits() {
 			// create a new portrait
 			player_portrait = portrait_template.clone().appendTo(portraits_root);
 			player_portrait.attr('id', player_data.id);
-			player_portrait.css('background-image', 'url('+player_data.portrait+')');
-			player_portrait.find('p')
-				.html('&nbspalt: '+1234+'<br>dist: '+player_data.x_pos*DIST_PER_NODE);
+			player_portrait.css({
+				'background-image': 'url('+player_data.portrait+')',
+				'border-color': player_data.color
+			});
+
+			// add click callback
+			player_portrait.click(function(evt) {
+				evt.preventDefault();
+				var me = $(this);
+				if(!me.hasClass('player_portrait')) { return false; }
+
+				var player_data = players_array[me.attr('index')];
+
+				// advance portrait
+				player_data.x_pos += 10;
+				setBackgroundPosition(player_data.x_pos, computeHeight(player_data.x_pos));
+
+				//alert('prout');
+				return false;
+			});
 
 			dom_portraits_collection[player_data.id] = player_portrait;
 
@@ -223,9 +227,19 @@ function refreshPlayerPortraits() {
 		}
 
 		// update player portrait pos
-		var top = computeTopOffset(computeHeight(player_data.x_pos));
+		var alt = computeHeight(player_data.x_pos);
+		var top = computeTopOffset(alt);
 		var left = computeLeftOffset(player_data.x_pos);
 		player_portrait.css( {top: top+'px', left: left+'px' } );
+		player_portrait.find('p')
+				.html('&nbspalt: '+alt.toFixed(0)+'m<br>dist: '+player_data.x_pos+'m');
+		player_portrait.attr('index', i);
+
+		if(current_player_id == player_data.id) {
+			player_portrait.addClass('player_portrait');
+		} else {
+			player_portrait.removeClass('player_portrait');
+		}
 	}
 
 }
@@ -240,7 +254,7 @@ function refreshPlayerPortraits() {
 // WINDOW EVENTS
 
 window.onload = function() {
-	setBackgroundPosition(0);
+	setBackgroundPosition(0, 0);
 }
 
 window.onresize = function() {

@@ -51,7 +51,6 @@ header {
 
 .portrait {
 	position: absolute;
-    cursor: pointer;
     width: 80px;
     height: 80px;
     border-radius: 100px;
@@ -61,33 +60,18 @@ header {
     box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.25);
     margin-top: -48px;
     margin-left: -48px;
+    -webkit-user-select: none; /* webkit (safari, chrome) browsers */
+    -moz-user-select: none; /* mozilla browsers */
+    -ms-user-select: none; /* IE10+ */
+    user-select: none;
     transition:
     	width 0.2s ease-in-out,
     	height 0.2s ease-in-out,
     	box-shadow 0.2s ease-in-out,
-    	margin 0.2s ease-in-out;
+    	margin 0.2s ease-in-out,
+    	left 0.25s ease-in-out,
+    	top 0.25s ease-in-out;
 }
-	.portrait:before {
-		position: relative;
-		content: "";
-		display: block;
-	    width: 80px;
-	    height: 80px;
-    	border-radius: 100px;
-	    background-color: white;
-	    opacity: 0;
-	    transition: opacity 0.2s ease-in-out;
-	}
-	.portrait:hover {
-		width: 80px;
-		height: 80px;
-		margin-top: -52px;
-    	box-shadow: 0px 9px 10px rgba(0, 0, 0, 0.35);
-	}
-	.portrait:hover:before {
-		opacity: 0.15;
-	}
-
 	.portrait p {
 	    font-size: 0.7em;
 	    margin: 0;
@@ -99,13 +83,71 @@ header {
 	    color: rgba(255, 255, 255, 0.73);
 	    white-space: nowrap;
 	    font-family: roboto mono;
+	    text-shadow: 0px 0px 3px black;
+	}
+
+.player_portrait {
+    cursor: pointer;
+    z-index: 10;
+}
+	.player_portrait:before {
+		position: relative;
+		content: "";
+		display: block;
+	    width: 80px;
+	    height: 80px;
+    	border-radius: 100px;
+	    background-color: white;
+	    opacity: 0;
+	    transition: opacity 0.2s ease-in-out;
+	}
+	.player_portrait:hover {
+		width: 80px;
+		height: 80px;
+		margin-top: -52px;
+    	box-shadow: 0px 9px 10px rgba(0, 0, 0, 0.35);
+	}
+	.player_portrait:hover:before {
+		opacity: 0.15;
 	}
 
 #player_portrait_template {
 	display: none;
 }
 
-/* GAME VIEW */
+
+#gameview .fade {
+	position: absolute;
+	pointer-events: none;
+}
+#gameview .fade_left {
+	height: 100%;
+    left: 0px;
+    top: 0px;
+	width: 15%;
+	background-image: linear-gradient(-90deg, rgba(128, 165, 195, 0), rgb(128, 165, 195));
+}
+#gameview .fade_right {
+	height: 100%;
+    right: 0px;
+    top: 0px;
+	width: 15%;
+	background-image: linear-gradient(90deg, rgba(128, 165, 195, 0), rgb(128, 165, 195));
+}
+#gameview .fade_bottom {
+	bottom: 0px;
+	height: 15%;
+	width: 100%;
+	background-image: linear-gradient(180deg, rgba(128, 165, 195, 0), rgb(128, 165, 195));
+}
+#gameview .fade_top {
+	top: 0px;
+	height: 15%;
+	width: 100%;
+	background-image: linear-gradient(0deg, rgba(128, 165, 195, 0), rgb(128, 165, 195));
+}
+
+/* BACKGROUND */
 
 #background {
 	width: 100%;
@@ -122,18 +164,4 @@ header {
 		stroke: white;
 		stroke-width: 8px;
 		stroke-linecap: round;
-	}
-
-	#background .fade {
-		position: absolute;
-		height: 100%;
-	    left: 0px;
-	    top: 0px;
-		width: 15%;
-		background-image: linear-gradient(-90deg, rgba(128, 165, 195, 0), #80A5C3);
-	}
-	#background .fade_right {
-		left: auto;
-		right: 0px;
-		background-image: linear-gradient(90deg, rgba(128, 165, 195, 0), #80A5C3);
 	}
