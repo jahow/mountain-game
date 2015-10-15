@@ -21,27 +21,23 @@
 
 	<div id="gameview">
 
+		<div id="background">
+
+			<svg viewBox="-2000 0 4000 500" preserveAspectRatio="xMidYMid slice">
+			</svg>
+
+			<div class="fade"></div>
+			<div class="fade fade_right"></div>
+
+		</div>
+
 		<div id="portraits">
-			<div class="portrait" style="background-image: url(portrait1.jpg)">
+			<div id="player_portrait_template" class="portrait">
 				<p>
 					&nbspalt: 4300m<br>
 					dist: 42315m
 				</p>
 			</div>
-
-			<div class="portrait" style="background-image: url(portrait2.jpg)">
-				<p>
-					&nbspalt: 450m<br>
-					dist: 815m
-				</p>
-			</div>
-		</div>
-
-		<div id="background">
-
-			<svg viewBox="-2000 0 4000 400" preserveAspectRatio="xMidYMid slice">
-			</svg>
-
 		</div>
 
 	</div>
@@ -50,13 +46,20 @@
 
 <script>
 
+// CONSTANTS
+
+var SEGMENT_SIZE = 100;		// size of segments on screen
+var DIST_PER_NODE = 100;	// meters between two nodes
+
+
+// BACKGROUND DISPLAY
+
 // height data
 //var height_data = [0,10,50,30,80,85,75,61,43,55,88,92,101,120,108,95];
 
 // current focus of the background curve & refresh
-var current_background_position = 0;
+var current_background_position = 0;	// given in dist coordinates
 var previous_background_position = 0;
-setBackgroundPosition(0);
 
 function setBackgroundPosition(pos) {
 	current_background_position = pos;
@@ -65,12 +68,13 @@ function setBackgroundPosition(pos) {
 
 function refreshBackgroundShapes() {
 	// init
-	var step_size = 50;
-	var range = Math.floor(document.body.clientWidth / step_size / 2);
+	// var step_size = 50;
+	// var range = Math.floor(document.body.clientWidth / step_size / 2);
+	var range = 2000 / 50;
 	var svg = d3.select('#background svg');
 
 	// calc
-	var nearest_node = Math.round(current_background_position / step_size);
+	var nearest_node = Math.round(current_background_position / SEGMENT_SIZE);
 	//var current_pos_shift = current_background_position - nearest_node * step_size;
 	var min_node = nearest_node - range;
 	var max_node = nearest_node + range;
@@ -107,44 +111,140 @@ function refreshBackgroundShapes() {
 
 	// enter+update
 	lines
-		.attr('x1', function(d, i) { return (d.node)*step_size - previous_background_position; })
-		.attr('x2', function(d, i) { return (d.node+1)*step_size - previous_background_position; })
-		.attr('y1', function(d, i) { return 300-d.start; })
-		.attr('y2', function(d, i) { return 300-d.end; })
+		.attr('x1', function(d, i) { return (d.node)*SEGMENT_SIZE - previous_background_position; })
+		.attr('x2', function(d, i) { return (d.node+1)*SEGMENT_SIZE - previous_background_position; })
+		.attr('y1', function(d, i) { return computeTopOffset(d.start); })
+		.attr('y2', function(d, i) { return computeTopOffset(d.end); })
 		.transition()
-		.attr('x1', function(d, i) { return (d.node)*step_size - current_background_position; })
-		.attr('x2', function(d, i) { return (d.node+1)*step_size - current_background_position; })
-		.style('opacity', function(d, i) {
-			return Math.max(0, Math.min(1, 2 - 2.2*Math.abs(i+0.5-range)/range));
-		});
+		.attr('x1', function(d, i) { return (d.node)*SEGMENT_SIZE - current_background_position; })
+		.attr('x2', function(d, i) { return (d.node+1)*SEGMENT_SIZE - current_background_position; })
+		//.style('opacity', function(d, i) {
+		//	return Math.max(0, Math.min(1, 2 - 2.2*Math.abs(i+0.5-range)/range));
+		//});
+		.style('opacity', 1);
 
 	// exit
 	lines.exit().remove();
 
+	refreshPlayerPortraits();
+
 	previous_background_position = current_background_position;
 }
 
-function computeHeightData(pos_x) {
-	if(pos_x < 0) { return 0; }
-	var alt = pos_x * 10 + pos_x * 5 * Math.cos(pos_x * 2);
-	return alt;
+// node_index must be an integer
+function computeNodeHeight(node_index) {
+	if(node_index <= 0) { return 0; }
+	return node_index * 10 + node_index * 5 * Math.cos(node_index * 2);
 }
 
+// interpolates between 2 nodes
+// pos_x is expressed in node coordinates, ie each node is an integer: 0, 1, 2, 3...
+function computeHeight(pos_x) {
+	var node_low = Math.floor(pos_x);
+	var node_high = Math.ceil(pos_x);
+	var ratio = pos_x - node_low;	// between 0 and 1
+	return (1-ratio) * computeNodeHeight(node_low) + ratio * computeNodeHeight(node_high);
+}
+
+// build an array of height data for a range of nodes
 function computeHeightDataArray(min_node, max_node) {
 	var result = [];
 	for(var i=min_node; i<max_node; i++) {
 		result.push({
 			node: i,
-			start: computeHeightData(i),
-			end: computeHeightData(i+1)
+			start: computeNodeHeight(i),
+			end: computeNodeHeight(i+1)
 		});
 	}
 	return result;
 }
 
+// computes the 'top' CSS offset based on current game view and given altitude (pos_y)
+function computeTopOffset(pos_y) {
+	return 300 - pos_y;		// add vertical view shift
+}
+// same for x pos
+function computeLeftOffset(pos_x) {
+	return pos_x * SEGMENT_SIZE - current_background_position;
+}
+
+// PLAYER MANAGEMENT
+
+// list of players data: x_pos (ie distance), momentum, id, portrait (filename)
+// this list is constantly maintained by the server
+var current_player_id = 0;
+var players_array = [];
+
+// list of dom objects relative to player portraits
+var dom_portraits_collection = {};
+
+// temp
+players_array.push({
+	x_pos: 1,
+	momentum: 4,
+	id: 88,
+	portrait: 'portrait1.jpg'
+});
+players_array.push({
+	x_pos: 4,
+	momentum: 8,
+	id: 2,
+	portrait: 'portrait2.jpg'
+});
+
+//refreshPlayerPortraits();
+
+// takes the players array and refresh DOM objects based on it
+function refreshPlayerPortraits() {
+
+	// base portrait template
+	var portrait_template = $("#player_portrait_template");
+	var portraits_root = $('#portraits');
+
+	var player_data;
+	var player_portrait;
+	for(var i=0; i<players_array.length; i++) {
+		player_data = players_array[i];
+
+		// check if we have a dom object for this one
+		if(dom_portraits_collection[player_data.id] == null) {
+
+			// create a new portrait
+			player_portrait = portrait_template.clone().appendTo(portraits_root);
+			player_portrait.attr('id', player_data.id);
+			player_portrait.css('background-image', 'url('+player_data.portrait+')');
+			player_portrait.find('p')
+				.html('&nbspalt: '+1234+'<br>dist: '+player_data.x_pos*DIST_PER_NODE);
+
+			dom_portraits_collection[player_data.id] = player_portrait;
+
+		} else {
+			player_portrait = dom_portraits_collection[player_data.id];
+		}
+
+		// update player portrait pos
+		var top = computeTopOffset(computeHeight(player_data.x_pos));
+		var left = computeLeftOffset(player_data.x_pos);
+		player_portrait.css( {top: top+'px', left: left+'px' } );
+	}
+
+}
+
+
+
+
+
+
+
+
+// WINDOW EVENTS
+
+window.onload = function() {
+	setBackgroundPosition(0);
+}
 
 window.onresize = function() {
-	refreshBackgroundShapes();
+	//refreshBackgroundShapes();
 }
 
 </script>
