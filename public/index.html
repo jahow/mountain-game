@@ -5,6 +5,7 @@
 	<title>refugedelaigle2016.fr</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/ico" href="favicon.ico"/>
     <link href="style.css" rel="stylesheet" type="text/css">
     <link href='https://fonts.googleapis.com/css?family=Open+Sans|Open+Sans+Condensed:300|Dosis:400,700|Abel|Roboto+Mono:400,500' rel='stylesheet' type='text/css'>
 
@@ -16,7 +17,7 @@
 
 	<header>
 		<h1>refugedelaigle<strong>2016</strong></h1>
-		<h2>soyez le premier au sommet!</h2>
+		<h2>soyez le premier au sommet !</h2>
 	</header>
 
 	<div id="gameview">
@@ -34,11 +35,17 @@
 		<div class="fade fade_top"></div>
 
 		<div id="portraits">
-			<div id="player_portrait_template" class="portrait">
+			<div id="player_portrait_template no_momentum" class="portrait">
+				<div class="name">name</div>
 				<p>
 					&nbspalt: 4300m<br>
 					dist: 42315m
 				</p>
+				<svg viewBox="-100 -100 200 200" width="200" height="200">
+					<rect x="-15" y="-5" width="15" height="10" fill="red" /> 
+					<polygon points="0,0 0,10 10,0 0,-10 0,0" fill="red" />
+				</svg>
+				<div class="momentum"> +1</div>
 			</div>
 		</div>
 
@@ -53,6 +60,7 @@
 
 var SEGMENT_SIZE = 100;		// size of segments on screen
 var DIST_PER_NODE = 100;	// meters between two nodes
+var ADVANCE_PER_CLICK = 1;	// don't change this please
 
 
 // BACKGROUND DISPLAY
@@ -168,6 +176,7 @@ players_array.push({
 	x_pos: 35,
 	momentum: 4,
 	id: 88,
+	name: 'oliv',
 	portrait: 'portrait1.jpg',
 	color: 'rgb(177, 97, 105)'
 });
@@ -175,6 +184,7 @@ players_array.push({
 	x_pos: 172,
 	momentum: 8,
 	id: 2,
+	name: 'nico',
 	portrait: 'portrait2.jpg',
 	color: 'rgb(150, 112, 245)'
 });
@@ -203,6 +213,11 @@ function refreshPlayerPortraits() {
 				'background-image': 'url('+player_data.portrait+')',
 				'border-color': player_data.color
 			});
+			player_portrait.find('.name')
+				.css('background-color', player_data.color)
+				.html(player_data.name);
+			player_portrait.find('svg *')
+				.css('fill', player_data.color);
 
 			// add click callback
 			player_portrait.click(function(evt) {
@@ -213,7 +228,7 @@ function refreshPlayerPortraits() {
 				var player_data = players_array[me.attr('index')];
 
 				// advance portrait
-				player_data.x_pos += 10;
+				player_data.x_pos += ADVANCE_PER_CLICK;
 				setBackgroundPosition(player_data.x_pos, computeHeight(player_data.x_pos));
 
 				//alert('prout');
@@ -232,8 +247,16 @@ function refreshPlayerPortraits() {
 		var left = computeLeftOffset(player_data.x_pos);
 		player_portrait.css( {top: top+'px', left: left+'px' } );
 		player_portrait.find('p')
-				.html('&nbspalt: '+alt.toFixed(0)+'m<br>dist: '+player_data.x_pos+'m');
+				.html('&nbspalt: '+alt.toFixed(0)+'m<br>dist: '+player_data.x_pos.toFixed(1)+'m');
 		player_portrait.attr('index', i);
+
+		// momentum arrow
+		if(player_data.momentum > 0) {
+			player_portrait.removeClass('no_momentum');
+			player_portrait.find('.momentum').html('+'+player_data.momentum);
+		} else {
+			player_portrait.addClass('no_momentum');
+		}
 
 		if(current_player_id == player_data.id) {
 			player_portrait.addClass('player_portrait');
@@ -245,7 +268,15 @@ function refreshPlayerPortraits() {
 }
 
 
+// GAME UPDATE
 
+// this regularly fetches the players data on the server
+function updateGame() {
+
+
+
+	window.requestAnimationFrame(updateGame);
+}
 
 
 
@@ -255,6 +286,8 @@ function refreshPlayerPortraits() {
 
 window.onload = function() {
 	setBackgroundPosition(0, 0);
+
+	window.requestAnimationFrame(updateGame);
 }
 
 window.onresize = function() {

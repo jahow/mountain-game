@@ -56,8 +56,8 @@ header {
     border-radius: 100px;
     background-position: center;
     background-size: cover;
-    border: 8px solid #B16169;
-    box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.25);
+    border: 8px solid red;
+    box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.35);
     margin-top: -48px;
     margin-left: -48px;
     -webkit-user-select: none; /* webkit (safari, chrome) browsers */
@@ -72,7 +72,7 @@ header {
     	left 0.25s ease-in-out,
     	top 0.25s ease-in-out;
 }
-	.portrait p {
+	.portrait > p {
 	    font-size: 0.7em;
 	    margin: 0;
 	    position: absolute;
@@ -85,6 +85,44 @@ header {
 	    font-family: roboto mono;
 	    text-shadow: 0px 0px 3px black;
 	}
+	.portrait > .name {
+		text-align: center;
+		position: absolute;
+		left: 0;
+		top: -40px;
+		width: calc(100% - 8px);
+		display: inline-block;
+		padding: 3px;
+		border-radius: 6px;
+		color: white;
+		font-size: 0.7em;
+    	box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.25);
+    	transition: box-shadow 0.2s ease-in-out;
+    	font-family: dosis;
+    	font-weight: bold;
+	}
+	.portrait > svg {
+		position: absolute;
+		left: 0px;
+		top: calc(40px - 100px);
+		pointer-events: none;
+		opacity: 1;
+		transition: opacity 0.2s ease-in-out;
+	}
+	.portrait > .momentum {
+	    position: absolute;
+	    left: 100px;
+	    top: 0px;
+	    line-height: 80px;
+	    font-size: 0.6em;
+	    color: white;
+		pointer-events: none;
+		opacity: 1;
+		transition: opacity 0.2s ease-in-out;
+	}
+
+	.portrait.no_momentum > svg { opacity: 0; }
+	.portrait.no_momentum > .momentum { opacity: 0; }
 
 .player_portrait {
     cursor: pointer;
@@ -97,7 +135,8 @@ header {
 	    width: 80px;
 	    height: 80px;
     	border-radius: 100px;
-	    background-color: white;
+	    /*background-color: white;*/
+	    box-shadow: inset white 0px 0px 19px; 
 	    opacity: 0;
 	    transition: opacity 0.2s ease-in-out;
 	}
@@ -105,10 +144,13 @@ header {
 		width: 80px;
 		height: 80px;
 		margin-top: -52px;
-    	box-shadow: 0px 9px 10px rgba(0, 0, 0, 0.35);
+    	box-shadow: 0px 9px 20px rgba(0, 0, 0, 0.45);
 	}
 	.player_portrait:hover:before {
-		opacity: 0.15;
+		opacity: 0.85;
+	}
+	.player_portrait:hover > .name {
+    	box-shadow: 0px 7px 15px rgba(0, 0, 0, 0.35);
 	}
 
 #player_portrait_template {
