@@ -117,6 +117,7 @@ var SEGMENT_SIZE = 100;		// size of segments on screen
 var DIST_PER_NODE = 100;	// meters between two nodes
 var ADVANCE_PER_CLICK = 2;	// don't change this please
 var BASE_WATER_CONSUMPTION = 0.002;
+var UPDATE_PERIOD = 0.2;	// seconds
 
 
 // BACKGROUND DISPLAY
@@ -381,12 +382,19 @@ function makeStep(me) {
 	// remove some water
 	player_data.water -= BASE_WATER_CONSUMPTION;
 
+	// kill player if water too low
+	if(player_data.water <= 0) {
+		// todo: add grave
+		// todo: display 'you're dead' screen
+		resetPlayerData();
+	}
+
 	// add upgrade?
 	if(Math.random() > 0.95) {
 		addNewUpgrade();
 	}
 
-	refreshUpgradesStates();
+	refreshUpgrades();
 }
 
 // returns the current player data
@@ -397,12 +405,23 @@ function getPlayerData() {
 	return null;	// error!
 }
 
+// reset player's data, effectively killing him/her
+function resetPlayerData() {
+	var player_data = getPlayerData();
+	player_data.x_pos = 0;
+	player_data.water = 1;
+
+	// delete all upgrades
+	upgrade_list = [];
+	refreshUpgrades();
+}
+
 // UPGRADES
 
 var upgrade_list = [];	// list of objects with type&cost parameters
 
 // checks if upgrades are available or not
-function refreshUpgradesStates() {
+function refreshUpgrades() {
 	// refresh currency counter
 	$('#currency span').html(steps_count);
 
@@ -476,19 +495,26 @@ function useUpgrade() {
 	upgrade_list.splice(index,1);
 
 	refreshPlayerPortraits();
-	refreshUpgradesStates();
+	refreshUpgrades();
 
 	// focus BG 
 	setBackgroundPosition(player_data.x_pos, computeHeight(player_data.x_pos));
 }
 
 // GAME UPDATE
+var previous_update_time = 0;
 
 // this regularly fetches the players data on the server
 // also updates current player currency & upgrades available
-function updateGame() {
+function updateGame(timestamp) {
 
+	var now = timestamp || Date.now();
+	if(now - previous_update_time > UPDATE_PERIOD) {
+		previous_update_time = now;
 
+		// fetch data from the server
+		// TODO
+	}
 
 	window.requestAnimationFrame(updateGame);
 }
