@@ -62,7 +62,7 @@ app.get('/gamestate/:player_id', function(req, res) {
   //var upgrades = player_data.upgrades;
 
   // gather other players info
-  var player_list = game_module.getSurroundingPlayersData(player_data.x_pos);
+  var player_list = game_module.getSurroundingPlayersData(player_data.x_pos, player_id);
 
   // send back final object!
   res.json({
@@ -75,11 +75,9 @@ app.get('/gamestate/:player_id', function(req, res) {
 
 // player actions
 app.post('/action', function(req, res) {
-
   var action_type = req.body.type;
   var player_id = req.body.player_id;
-
-  console.log('action type "'+action_type+'" made by player id='+player_id);
+  //console.log('action type "'+action_type+'" made by player id='+player_id);
 
   switch(action_type) {
 

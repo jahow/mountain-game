@@ -8,6 +8,7 @@ var game_module = function() {
 	this.DIST_PER_NODE = 100;	// meters between two nodes
 	this.ADVANCE_PER_CLICK = 2;	// how much meters per step (base)
 	this.BASE_WATER_CONSUMPTION = 0.002;		// how much water per step
+	this.MAX_UPGRADES = 4;
 
 
 	// TERRAIN
@@ -40,6 +41,15 @@ var game_module = function() {
 		return result;
 	}
 
+	// gives a factor between -1 and 1, 0 being a flat terrain
+	// the slope factor is actually the rate at which the altitude rise compared to distance
+	this.computeSlopeFactor = function(pos_x) {
+		var height_diff = this.computeNodeHeight(Math.ceil(pos_x/this.DIST_PER_NODE))
+			- this.computeNodeHeight(Math.floor(pos_x/this.DIST_PER_NODE));
+		//var slope = 1 - 0.01 * height_diff;
+		//return Math.min(1.7, Math.max(0.3, slope));
+		return height_diff / this.DIST_PER_NODE;
+	}
 
 
 	// PLAYERS
@@ -49,6 +59,8 @@ var game_module = function() {
 	// temp
 	this.players_array.push({
 		x_pos: 35,
+		alt: 0,
+		// slope: 1,
 		momentum: 4,
 		id: 88,
 		name: 'oliv',
@@ -60,6 +72,8 @@ var game_module = function() {
 	});
 	this.players_array.push({
 		x_pos: 172,
+		alt: 0,
+		// slope: 1,
 		momentum: 8,
 		id: 2,
 		name: 'nico',
@@ -71,12 +85,14 @@ var game_module = function() {
 	});
 	this.players_array.push({
 		x_pos: 72,
+		alt: 0,
+		// slope: 1,
 		momentum: 0,
 		id: 4,
 		name: 'bob',
 		portrait: '',
 		color: 'rgb(150, 112, 245)',
-		water: 1,
+		water: 0.1,
 		upgrades: [],
 		steps_count: 0
 	});
@@ -89,7 +105,7 @@ var game_module = function() {
 		return null;	// error!
 	}
 
-	// return restrained data (no upgrades, no id...) for surrounding players
+	// return restrained data (no upgrades...) for surrounding players
 	this.getSurroundingPlayersData = function(x_pos, skip_id) {
 		var result = [];
 		var range = 2000;
@@ -105,7 +121,9 @@ var game_module = function() {
 
 			// add info to result
 			result.push({
+				id: data.id,
 				x_pos: data.x_pos,
+				alt: data.alt,
 				momentum: data.momentum,
 				name: data.name,
 				portrait: data.portrait,
@@ -125,15 +143,19 @@ var game_module = function() {
 		var player_data = this.getPlayerData(player_id);
 
 		// compute how much to advance
-		var advance = ADVANCE_PER_CLICK * player_data.momentum;
+		var advance = this.ADVANCE_PER_CLICK * (player_data.momentum+1);
 		var slope = this.computeSlopeFactor(player_data.x_pos);
-		player_data.x_pos += advance * slope;
+		player_data.x_pos += advance * (1 - slope);
+
+		// update alt & slope
+		player_data.alt = this.computeHeight(player_data.x_pos);
+		player_data.slope = slope;
 
 		// add footstep count
 		player_data.steps_count++;
 
 		// remove some water
-		player_data.water -= BASE_WATER_CONSUMPTION;
+		player_data.water -= this.BASE_WATER_CONSUMPTION;
 
 		// kill player if water too low
 		if(player_data.water <= 0) {
@@ -144,7 +166,7 @@ var game_module = function() {
 
 		// add upgrade?
 		if(Math.random() > 0.95) {
-			this.addNewUpgrade();
+			this.addNewUpgrade(player_id);
 		}
 	}
 
@@ -162,7 +184,7 @@ var game_module = function() {
 	// depending on player state, add new upgrade
 	this.addNewUpgrade = function(player_id) {
 		var player_data = this.getPlayerData(player_id);		
-		if(player_data.upgrades.length >= 4) { return; }
+		if(player_data.upgrades.length >= this.MAX_UPGRADES) { return; }
 
 		var type = Math.floor(Math.random()*3);
 		var cost = 0;
@@ -192,7 +214,11 @@ var game_module = function() {
 		// do what needs to be done
 		switch(type) {
 			// bond en avant
-			case 0: player_data.x_pos += 10 + Math.floor(Math.random()*290); break;
+			case 0:
+				player_data.x_pos += 10 + Math.floor(Math.random()*290);
+				player_data.alt = this.computeHeight(player_data.x_pos);
+				player_data.slope = this.computeSlopeFactor(player_data.x_pos);
+			break;
 			// élan
 			case 1: player_data.momentum++; break;
 			// micropur

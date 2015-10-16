@@ -114,13 +114,14 @@
 // CONSTANTS
 
 var SEGMENT_SIZE = 100;		// size of segments on screen
-var DIST_PER_NODE = 100;	// meters between two nodes
-var ADVANCE_PER_CLICK = 2;	// don't change this please
+var UPDATE_PERIOD = 0.5;		// seconds
+var ADVANCE_PER_CLICK = 2;				// hacking these will make your computer explode
 var BASE_WATER_CONSUMPTION = 0.002;
-var UPDATE_PERIOD = 0.2;	// seconds
-
 
 // BACKGROUND DISPLAY
+
+// height list provided by the server
+var height_data = [];
 
 // current focus of the background curve & refresh
 var current_background_position_x = 0;	// given in dist coordinates
@@ -147,7 +148,7 @@ function refreshBackgroundShapes() {
 	var max_node = nearest_node + range;
 
 	// compute height data (gives an array of altitudes)
-	var height_data = computeHeightDataArray(min_node, max_node);
+	//var height_data = computeHeightDataArray(min_node, max_node);
 	//console.dir(height_data);
 
 	// apply data
@@ -179,6 +180,7 @@ function refreshBackgroundShapes() {
 	previous_background_position_y = current_background_position_y;
 }
 
+/*
 // node_index must be an integer
 function computeNodeHeight(node_index) {
 	if(node_index <= 0) { return 0; }
@@ -213,6 +215,22 @@ function computeSlopeFactor(pos_x) {
 	var slope = 1 - 0.01 * height_diff;
 	return Math.min(1.7, Math.max(0.3, slope));
 }
+*/
+
+// clientside predictions
+this.computeHeightAndSlope = function(pos_x) {
+	var node = Math.floor(pos_x/SEGMENT_SIZE);
+	var ratio = pos_x/SEGMENT_SIZE - node;	// between 0 and 1
+	var height = 0;
+	var slope = 0;
+	for(var i = 0; i < height_data.length; i++) {
+		if(Math.abs(height_data[i].node - node) > 0.01) { continue; }
+		height = (1-ratio) * height_data[i].start + ratio * height_data[i].end;
+		slope = (height_data[i].end - height_data[i].start) / SEGMENT_SIZE;
+		break;
+	}
+	return { height: height, slope: slope};
+}
 
 // computes the 'top' CSS offset based on current game view and given altitude (pos_y)
 function computeTopOffset(pos_y, previous) {
@@ -229,34 +247,14 @@ function computeLeftOffset(pos_x, previous) {
 // PLAYER MANAGEMENT
 
 // list of players data: x_pos (ie distance), momentum, id, portrait (filename)
-// this list is constantly maintained by the server
+// this list is provided by the server
+// index 0 is the current player! (placeholder added)
 var current_player_id = 88;
-var players_array = [];
+var players_array = [null];
 
 // list of dom objects relative to player portraits
 var dom_portraits_collection = {};
 
-// temp
-players_array.push({
-	x_pos: 35,
-	momentum: 4,
-	id: 88,
-	name: 'oliv',
-	portrait: 'portrait1.jpg',
-	color: 'rgb(177, 97, 105)',
-	water: 0.7
-});
-players_array.push({
-	x_pos: 172,
-	momentum: 8,
-	id: 2,
-	name: 'nico',
-	portrait: 'portrait2.jpg',
-	color: 'rgb(150, 112, 245)',
-	water: 0.3
-});
-
-//refreshPlayerPortraits();
 
 // takes the players array and refresh DOM objects based on it
 function refreshPlayerPortraits() {
@@ -270,12 +268,16 @@ function refreshPlayerPortraits() {
 	for(var i=0; i<players_array.length; i++) {
 		player_data = players_array[i];
 
+		// check placehold & skip
+		if(!player_data) { continue; }
+
 		// check if we have a dom object for this one
 		if(dom_portraits_collection[player_data.id] == null) {
 
 			// create a new portrait
 			player_portrait = portrait_template.clone().appendTo(portraits_root);
-			player_portrait.attr('id', player_data.id);
+			//player_portrait.attr('id', player_data.id);
+			player_portrait.attr('id', null)
 			player_portrait.css({
 				'background-image': 'url('+player_data.portrait+')',
 				'border-color': player_data.color
@@ -303,13 +305,12 @@ function refreshPlayerPortraits() {
 		}
 
 		// update player portrait pos
-		var alt = computeHeight(player_data.x_pos);
-		var top = computeTopOffset(alt);
+		var top = computeTopOffset(player_data.alt);
 		var left = computeLeftOffset(player_data.x_pos);
 		player_portrait.css( {top: top+'px', left: left+'px' } );
 		player_portrait.find('p')
-				.html('&nbspalt: '+alt.toFixed(0)+'m<br>dist: '+player_data.x_pos.toFixed(1)+'m');
-		player_portrait.attr('index', i);
+				.html('&nbspalt: '+player_data.alt.toFixed(0)+'m<br>dist: '+player_data.x_pos.toFixed(1)+'m');
+		//player_portrait.attr('index', i);
 
 		// momentum arrow
 		if(player_data.momentum > 0) {
@@ -338,30 +339,40 @@ function refreshPlayerPortraits() {
 			.css('margin-top', view_y - 20);
 		inside[0].setAttribute('viewBox', '-75 '+view_y+' 150 200');
 
-		if(current_player_id == player_data.id) {
+		if(i == 0) {
 			player_portrait.addClass('player_portrait');
 		} else {
 			player_portrait.removeClass('player_portrait');
 		}
 	}
 
+	// TODO: check if some portraits are not linked to players anymore
 }
 
 var boot_switched = false;
-var steps_count = 0;
+var steps_count = 0;	// for the current player
 
 // 'me' is the current jquery portrait
 function makeStep(me) {
-	var player_data = players_array[me.attr('index')];
+	var player_data = players_array[0];
+
+	// make server POST request
+	$.post("action", {
+		type: 'walk',
+		player_id: current_player_id
+	}, function(data) {
+		// done!
+	});
 
 	// compute how much to advance
-	var advance = ADVANCE_PER_CLICK * player_data.momentum;
-	var slope = computeSlopeFactor(player_data.x_pos);
-	//console.log('slope factor='+slope);
-	player_data.x_pos += advance * slope;
+	var advance = ADVANCE_PER_CLICK * (player_data.momentum+1);
+	//var slope = player_data.slope;
+	var height_slope = computeHeightAndSlope(player_data.x_pos);
+	player_data.x_pos += advance * (1 - height_slope.slope);
+	player_data.alt = height_slope.height;
 
 	// focus BG 
-	setBackgroundPosition(player_data.x_pos, computeHeight(player_data.x_pos));
+	setBackgroundPosition(player_data.x_pos, player_data.alt);
 
 	// display bootstep
 	var boot_template = $('#bootprint_template');
@@ -379,33 +390,38 @@ function makeStep(me) {
 	// add footstep count
 	steps_count++;
 
-	// remove some water
-	player_data.water -= BASE_WATER_CONSUMPTION;
+	// refresh currency counter
+	$('#currency span').html(steps_count);
 
-	// kill player if water too low
-	if(player_data.water <= 0) {
+	// remove some water (done by the server)
+	//player_data.water -= BASE_WATER_CONSUMPTION;
+
+	// kill player if water too low: done by the server
+	//if(player_data.water <= 0) {
 		// todo: add grave
 		// todo: display 'you're dead' screen
-		resetPlayerData();
-	}
+		//resetPlayerData();
+	//}
 
 	// add upgrade?
-	if(Math.random() > 0.95) {
-		addNewUpgrade();
-	}
+	//if(Math.random() > 0.95) {
+	//	addNewUpgrade();
+	//}
 
-	refreshUpgrades();
+	//refreshUpgrades();
 }
 
 // returns the current player data
 function getPlayerData() {
-	for(var i=0; i<players_array.length; i++) {
-		if(players_array[i].id == current_player_id) { return players_array[i]; }
-	}
-	return null;	// error!
+	//for(var i=0; i<players_array.length; i++) {
+	//	if(players_array[i].id == current_player_id) { return players_array[i]; }
+	//}
+	//return null;	// error!
+	return players_array[0];
 }
 
-// reset player's data, effectively killing him/her
+// reset player's data, effectively killing him/her : done by the server
+/*
 function resetPlayerData() {
 	var player_data = getPlayerData();
 	player_data.x_pos = 0;
@@ -415,26 +431,70 @@ function resetPlayerData() {
 	upgrade_list = [];
 	refreshUpgrades();
 }
+*/
 
 // UPGRADES
 
-var upgrade_list = [];	// list of objects with type&cost parameters
+// list of objects with type&cost parameters ; provided by the server!
+var upgrade_list = [];
+
+function getUpgradeName(type) {
+	switch(type) {
+		case 0: return 'BOND EN AVANT';
+		case 1: return 'ELAN +1';
+		case 2: return 'MICROPUR';
+	}
+}
 
 // checks if upgrades are available or not
-function refreshUpgrades() {
-	// refresh currency counter
-	$('#currency span').html(steps_count);
-
+// if price only, no dom object will be added/removed
+function refreshUpgrades(price_only) {
 	var ui_root = $('#upgrade_ui');
-	ui_root.find('.upgrade').each( function() {
-		var me = $(this);
-		var cost = me.attr('cost');
-		if(steps_count >= cost) { me.addClass('available'); }
-		else { me.removeClass('available'); }
-	});
+	var upgrades_dom = ui_root.find('.upgrade').not('.consumed');
+
+	// first clean all dom objects if there is any discrepancy (fancy wooord)
+	var obj, type, cost, name;
+	for(var i=0; i<upgrades_dom.length && i<upgrade_list && !price_only; i++) {
+		obj = $(upgrades_dom[i]);
+		type = upgrade_list[i].type;
+		cost = upgrade_list[i].cost;
+
+		// clear all
+		if(obj.attr('cost') != cost || obj.attr('type') != type) {
+			upgrades_dom.remove();
+			upgrades_dom = [];
+			break;
+		}
+	}
+
+	// now add dom objects based on upgrade list (should only be at the end)
+	//upgrades_dom = ui_root.find('.upgrade').not('.consumed');
+	for(var i=0; i<upgrade_list.length; i++) {
+		obj = $(upgrades_dom[i]);
+		type = upgrade_list[i].type;
+		cost = upgrade_list[i].cost;
+
+		// create new dom obj?
+		if(i >= upgrades_dom.length) {
+
+			if(price_only) { continue; }
+
+			obj = $('<div>', {class: 'upgrade type'+type, html: getUpgradeName(type)})
+				.attr('cost', cost).attr('type', type)
+				.click(useUpgrade)
+				.append($('<span>').html(cost));
+			obj.appendTo(ui_root);
+			obj.css({top:'100px', opacity:0}).animate({top:'0px', opacity:1});
+		}
+
+		// refresh availability
+		if(steps_count >= cost) { obj.addClass('available'); }
+		else { obj.removeClass('available'); }
+	}
 }
 
 // depending on player state, add new upgrade
+/*
 function addNewUpgrade() {
 	if(upgrade_list.length >= 4) { return; }
 
@@ -465,40 +525,59 @@ function addNewUpgrade() {
 
 	dom_object.css({top:'100px', opacity:0}).animate({top:'0px', opacity:1});
 }
+*/
 
 // callback for upgrade click
 function useUpgrade() {
 	var me = $(this);
 	var cost = me.attr('cost');
 	var type = parseInt(me.attr('type'));
-	var index = me.attr('index');
+	//var index = me.attr('index');
+	var index = me.index('#upgrade_ui .upgrade:not(.consumed)');
 	var player_data = getPlayerData();
 
 	if(steps_count < cost) { return false; }
 
-	// use currency & delete me
+	// send server POST req
+	$.post("action", {
+		type: 'upgrade',
+		player_id: current_player_id,
+		upgrade_index: index
+	}, function(data) {
+		// done!
+	});
+
+	// mark as consumed
+	me.addClass('.consumed');
+
+	// use currency & delete me (will be confirmed by server afterwards)
 	steps_count -= cost;
 	me.animate({left:'100px', opacity:0}).queue(function() { $(this).remove(); $(this).dequeue(); });
 
-	// do what needs to be done
-	console.log('using upgrade type='+type);
-	switch(type) {
-		// bond en avant
-		case 0: player_data.x_pos += 10 + Math.floor(Math.random()*290); break;
-		// élan
-		case 1: player_data.momentum++; break;
-		// micropur
-		case 2: player_data.water = 1; break; // TODO
-	}
+	// refresh currency counter
+	$('#currency span').html(steps_count);
 
-	// remove from array
+	// do what needs to be done : done by server
+	//console.log('using upgrade type='+type);
+	//switch(type) {
+		// bond en avant
+		//case 0: player_data.x_pos += 10 + Math.floor(Math.random()*290); break;
+		// élan
+		//case 1: player_data.momentum++; break;
+		// micropur
+		//case 2: player_data.water = 1; break; // handled by server
+	//}
+
+	// TODO: VFX
+
+	// remove from array (this is cosmetic only, server will give us an up to date upgrade list)
 	upgrade_list.splice(index,1);
 
 	refreshPlayerPortraits();
-	refreshUpgrades();
+	refreshUpgrades(true);
 
 	// focus BG 
-	setBackgroundPosition(player_data.x_pos, computeHeight(player_data.x_pos));
+	setBackgroundPosition(player_data.x_pos, player_data.alt);
 }
 
 // GAME UPDATE
@@ -509,11 +588,34 @@ var previous_update_time = 0;
 function updateGame(timestamp) {
 
 	var now = timestamp || Date.now();
-	if(now - previous_update_time > UPDATE_PERIOD) {
+	if(now - previous_update_time > UPDATE_PERIOD * 1000) {
 		previous_update_time = now;
 
 		// fetch data from the server
-		// TODO
+		$.get("gamestate/"+current_player_id, function(data) {
+
+			// terrain
+			height_data = data.height_data;
+
+			// surrounding players (with current player at index 0)
+			players_array = data.player_list;
+			players_array.unshift(data.player_data);
+
+			// upgrades
+			upgrade_list = data.player_data.upgrades;
+
+			// other
+			steps_count = data.player_data.steps_count;
+
+			// refreshes!
+			//refreshBackgroundShapes();
+			//refreshPlayerPortraits();
+			setBackgroundPosition(data.player_data.x_pos, data.player_data.alt);
+			refreshUpgrades();
+
+		}).fail(function(jqXHR, textStatus) {
+			console.log('an error happened when fetching gamestate: '+textStatus);
+		});
 	}
 
 	window.requestAnimationFrame(updateGame);
