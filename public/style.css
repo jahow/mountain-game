@@ -131,7 +131,7 @@ header {
 	.portrait .water {
 		position: absolute;
 		left: -95px;
-		top: -75px;
+		top: -57px;
 	}
 	.portrait .water svg { position: absolute; }
 	.portrait .water svg.inside * {

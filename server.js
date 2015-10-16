@@ -35,22 +35,68 @@ app.use(express.static(__dirname + '/public'));
 app.get('/gamestate', function(req, res) {
   console.log('gamestate requested from a spectator pov');
   res.json({
-
+    // TODO
   });
 });
 
 // fetch gamestate from a particular player point of view
 app.get('/gamestate/:player_id', function(req, res) {
   var player_id = req.params.player_id;
-  console.log('gamestate requested from a player pov');
+  //console.log('gamestate requested from player id='+player_id);
 
-  var player_data = game_module.getPlayerData();
+  // fetch player data
+  var player_data = game_module.getPlayerData(player_id);
+  if(!player_data) {
+    res.status(404).send('invalid player id');  
+    return;
+  }
 
+  // build terrain data around player
+  var nearest_node = Math.round(player_data.x_pos / game_module.DIST_PER_NODE);
+  var range = 10;
+  var min_node = nearest_node - range;
+  var max_node = nearest_node + range;
+  var height_data = game_module.computeHeightDataArray(min_node, max_node);
+
+  // gather upgrade list
+  //var upgrades = player_data.upgrades;
+
+  // gather other players info
+  var player_list = game_module.getSurroundingPlayersData(player_data.x_pos);
+
+  // send back final object!
   res.json({
-
-
+    height_data: height_data,
+    //upgrades: upgrades,
+    player_list: player_list,
+    player_data: player_data    // server side player data for confirmation
   });
 });
+
+// player actions
+app.post('/action', function(req, res) {
+
+  var action_type = req.body.type;
+  var player_id = req.body.player_id;
+
+  console.log('action type "'+action_type+'" made by player id='+player_id);
+
+  switch(action_type) {
+
+    case "walk":
+      game_module.makeStep(player_id);
+      res.send('success');
+    break;
+
+    case "upgrade":
+      var index = req.body.upgrade_index;
+      game_module.useUpgrade(player_id, index);
+      res.send('success');
+    break;
+  }
+
+});
+
 
 app.use(function(req, res, next) {
   res.setHeader('Content-Type', 'text/plain');
