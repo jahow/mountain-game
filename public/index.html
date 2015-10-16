@@ -41,14 +41,68 @@
 					&nbspalt: 4300m<br>
 					dist: 42315m
 				</p>
-				<svg viewBox="-100 -100 200 200" width="200" height="200">
+				<svg class="arrow" viewBox="-100 -100 200 200" width="200" height="200">
 					<rect x="-20" y="-5" width="20" height="10" fill="red" /> 
 					<polygon points="0,0 0,10 10,0 0,-10 0,0" fill="red" />
 				</svg>
 				<div class="momentum"> +1</div>
+				<div class="water">
+					<svg class="outside" width="150" height="200" viewBox="-75 20 150 200">
+						<path d="
+							M0,180
+							L-20,180
+							A10,10 0 0,1 -30,170
+							L-30,100
+							A30,30 0 0,1 -20,90
+							A10,10 0 0,0 -10,80
+							L10,80
+							A10,10 0 0,0 20,90
+							A30,30 0 0,1 30,100
+							L30 170
+							A10,10 0 0,1 20,180
+							L0,180" transform="scale(0.35)" />
+						<rect x="-10" y="60" width="20" height="10" transform="scale(0.35)" />
+					</svg>
+					<svg class="inside" width="150" height="200" viewBox="-75 20 150 200">
+						<path d="
+							M0,180
+							L-20,180
+							A10,10 0 0,1 -30,170
+							L-30,100
+							A30,30 0 0,1 -20,90
+							A10,10 0 0,0 -10,80
+							L10,80
+							A10,10 0 0,0 20,90
+							A30,30 0 0,1 30,100
+							L30 170
+							A10,10 0 0,1 20,180
+							L0,180" transform="scale(0.35)" />
+						<rect x="-10" y="60" width="20" height="10" transform="scale(0.35)" />
+					</svg>
+				</div>
 			</div>
 		</div>
 
+		<div id="player_ui">
+			<svg width="500" height="300" viewBox="-250 0 500 300">
+				<path d="
+					M-140,170
+					A200,200 0 0,1 -25,110
+					L0,50
+					L25,110
+					A200,200 0 0,1 140,170"
+					stroke="white" stroke-width="10" fill="none" transform="scale(0.5)" />
+			</svg>
+			<object id="bootprint_template" class="bootprint" data="/boot-print.svg" type="image/svg+xml"></object>
+		</div>
+
+		<div id="upgrade_ui">
+			<div id="currency">
+				<object class="booticon1" data="/boot-print.svg" type="image/svg+xml"></object>
+				<object class="booticon2" data="/boot-print.svg" type="image/svg+xml"></object>
+				<span>0</span>
+			</div>
+		</div>
 
 	</div>
 
@@ -56,11 +110,13 @@
 
 <script>
 
+
 // CONSTANTS
 
 var SEGMENT_SIZE = 100;		// size of segments on screen
 var DIST_PER_NODE = 100;	// meters between two nodes
-var ADVANCE_PER_CLICK = 1;	// don't change this please
+var ADVANCE_PER_CLICK = 2;	// don't change this please
+var BASE_WATER_CONSUMPTION = 0.002;
 
 
 // BACKGROUND DISPLAY
@@ -74,8 +130,8 @@ var previous_background_position_y = 0;
 function setBackgroundPosition(x_pos, y_pos) {
 	current_background_position_x = x_pos;
 	current_background_position_y = y_pos;
-	refreshBackgroundShapes();
 	refreshPlayerPortraits();
+	refreshBackgroundShapes();
 }
 
 function refreshBackgroundShapes() {
@@ -150,16 +206,24 @@ function computeHeightDataArray(min_node, max_node) {
 	return result;
 }
 
+// gives a factor between 0 and 2, 1 being a flat terrain
+function computeSlopeFactor(pos_x) {
+	var height_diff = computeNodeHeight(Math.ceil(pos_x/SEGMENT_SIZE)) - computeNodeHeight(Math.floor(pos_x/SEGMENT_SIZE));
+	var slope = 1 - 0.01 * height_diff;
+	return Math.min(1.7, Math.max(0.3, slope));
+}
+
 // computes the 'top' CSS offset based on current game view and given altitude (pos_y)
 function computeTopOffset(pos_y, previous) {
 	var offset = previous ? previous_background_position_y : current_background_position_y;
-	return 300 - pos_y + offset;		// add vertical view shift
+	return 250 - pos_y + offset;		// add vertical view shift
 }
 // same for x pos
 function computeLeftOffset(pos_x, previous) {
 	var offset = previous ? previous_background_position_x : current_background_position_x;
 	return pos_x - offset;
 }
+
 
 // PLAYER MANAGEMENT
 
@@ -178,7 +242,8 @@ players_array.push({
 	id: 88,
 	name: 'oliv',
 	portrait: 'portrait1.jpg',
-	color: 'rgb(177, 97, 105)'
+	color: 'rgb(177, 97, 105)',
+	water: 0.7
 });
 players_array.push({
 	x_pos: 172,
@@ -186,7 +251,8 @@ players_array.push({
 	id: 2,
 	name: 'nico',
 	portrait: 'portrait2.jpg',
-	color: 'rgb(150, 112, 245)'
+	color: 'rgb(150, 112, 245)',
+	water: 0.3
 });
 
 //refreshPlayerPortraits();
@@ -216,7 +282,7 @@ function refreshPlayerPortraits() {
 			player_portrait.find('.name')
 				.css('background-color', player_data.color)
 				.html(player_data.name);
-			player_portrait.find('svg *')
+			player_portrait.find('svg.arrow *')
 				.css('fill', player_data.color);
 
 			// add click callback
@@ -225,13 +291,7 @@ function refreshPlayerPortraits() {
 				var me = $(this);
 				if(!me.hasClass('player_portrait')) { return false; }
 
-				var player_data = players_array[me.attr('index')];
-
-				// advance portrait
-				player_data.x_pos += ADVANCE_PER_CLICK;
-				setBackgroundPosition(player_data.x_pos, computeHeight(player_data.x_pos));
-
-				//alert('prout');
+				makeStep(me);
 				return false;
 			});
 
@@ -256,8 +316,8 @@ function refreshPlayerPortraits() {
 			player_portrait.find('.momentum').html('+'+player_data.momentum);
 
 			var scale =  1 + 0.3 * player_data.momentum;
-			player_portrait.find('svg rect').css('transform', 'scale(1,'+scale+')');
-			player_portrait.find('svg polygon').css('transform', 'scale('+scale+')');
+			player_portrait.find('svg.arrow rect').css('transform', 'scale(1,'+scale+')');
+			player_portrait.find('svg.arrow polygon').css('transform', 'scale('+scale+')');
 
 			var font_scale = 0.5 + 0.07 * player_data.momentum;
 			var width = 14 + 7 * scale;
@@ -271,6 +331,12 @@ function refreshPlayerPortraits() {
 			player_portrait.addClass('no_momentum');
 		}
 
+		// water bottle
+		var view_y = 65 - Math.floor(45 * player_data.water);
+		var inside = player_portrait.find('.water svg.inside')
+			.css('margin-top', view_y - 20);
+		inside[0].setAttribute('viewBox', '-75 '+view_y+' 150 200');
+
 		if(current_player_id == player_data.id) {
 			player_portrait.addClass('player_portrait');
 		} else {
@@ -280,10 +346,146 @@ function refreshPlayerPortraits() {
 
 }
 
+var boot_switched = false;
+var steps_count = 0;
+
+// 'me' is the current jquery portrait
+function makeStep(me) {
+	var player_data = players_array[me.attr('index')];
+
+	// compute how much to advance
+	var advance = ADVANCE_PER_CLICK * player_data.momentum;
+	var slope = computeSlopeFactor(player_data.x_pos);
+	//console.log('slope factor='+slope);
+	player_data.x_pos += advance * slope;
+
+	// focus BG 
+	setBackgroundPosition(player_data.x_pos, computeHeight(player_data.x_pos));
+
+	// display bootstep
+	var boot_template = $('#bootprint_template');
+	var ui_root = $('#player_ui');
+	var boot = boot_template.clone().attr('id', null).appendTo(ui_root);
+	if(boot_switched) { boot.addClass('bootprint_right'); }
+	var top = 60 + Math.floor(25 * Math.random());
+	var left = -12 + Math.floor(24 * Math.random());
+	boot.css( {top: top+'px', 'margin-left': '-'+left+'px' })
+		.animate( {top: (top+100)+'px', opacity: 0})
+		.queue( function() { $(this).remove(); $(this).dequeue(); });
+
+	boot_switched = !boot_switched;
+
+	// add footstep count
+	steps_count++;
+
+	// remove some water
+	player_data.water -= BASE_WATER_CONSUMPTION;
+
+	// add upgrade?
+	if(Math.random() > 0.95) {
+		addNewUpgrade();
+	}
+
+	refreshUpgradesStates();
+}
+
+// returns the current player data
+function getPlayerData() {
+	for(var i=0; i<players_array.length; i++) {
+		if(players_array[i].id == current_player_id) { return players_array[i]; }
+	}
+	return null;	// error!
+}
+
+// UPGRADES
+
+var upgrade_list = [];	// list of objects with type&cost parameters
+
+// checks if upgrades are available or not
+function refreshUpgradesStates() {
+	// refresh currency counter
+	$('#currency span').html(steps_count);
+
+	var ui_root = $('#upgrade_ui');
+	ui_root.find('.upgrade').each( function() {
+		var me = $(this);
+		var cost = me.attr('cost');
+		if(steps_count >= cost) { me.addClass('available'); }
+		else { me.removeClass('available'); }
+	});
+}
+
+// depending on player state, add new upgrade
+function addNewUpgrade() {
+	if(upgrade_list.length >= 4) { return; }
+
+	var ui_root = $('#upgrade_ui');
+	var type = Math.floor(Math.random()*3);
+	var cost = 0;
+	var name = "";
+	var player_data = getPlayerData();
+	switch(type) {
+		// bond en avant
+		case 0: cost = 20 + Math.floor(Math.random() * 40); name = "BOND EN AVANT"; break;
+		// élan
+		case 1:
+			cost = (20 + Math.floor(Math.random() * 20)) * (player_data.momentum+1);
+			name = "ELAN +1";
+			break;
+		// micropur
+		case 2: cost = 100 + Math.floor(Math.random() * 200); name = "MICROPUR"; break;
+	}
+	upgrade_list.push({type: type, cost: cost});
+
+	// add dom object
+	var dom_object = $('<div>', {class: 'upgrade type'+type, html: name})
+		.attr('cost', cost).attr('type', type).attr('index', upgrade_list.length-1)
+		.click(useUpgrade)
+		.append($('<span>').html(cost));
+	dom_object.appendTo(ui_root);
+
+	dom_object.css({top:'100px', opacity:0}).animate({top:'0px', opacity:1});
+}
+
+// callback for upgrade click
+function useUpgrade() {
+	var me = $(this);
+	var cost = me.attr('cost');
+	var type = parseInt(me.attr('type'));
+	var index = me.attr('index');
+	var player_data = getPlayerData();
+
+	if(steps_count < cost) { return false; }
+
+	// use currency & delete me
+	steps_count -= cost;
+	me.animate({left:'100px', opacity:0}).queue(function() { $(this).remove(); $(this).dequeue(); });
+
+	// do what needs to be done
+	console.log('using upgrade type='+type);
+	switch(type) {
+		// bond en avant
+		case 0: player_data.x_pos += 10 + Math.floor(Math.random()*290); break;
+		// élan
+		case 1: player_data.momentum++; break;
+		// micropur
+		case 2: player_data.water = 1; break; // TODO
+	}
+
+	// remove from array
+	upgrade_list.splice(index,1);
+
+	refreshPlayerPortraits();
+	refreshUpgradesStates();
+
+	// focus BG 
+	setBackgroundPosition(player_data.x_pos, computeHeight(player_data.x_pos));
+}
 
 // GAME UPDATE
 
 // this regularly fetches the players data on the server
+// also updates current player currency & upgrades available
 function updateGame() {
 
 
