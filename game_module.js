@@ -50,9 +50,10 @@ var game_module = function() {
 	this.computeSlopeFactor = function(pos_x) {
 		var height_diff = this.computeNodeHeight(Math.ceil(pos_x/this.DIST_PER_NODE))
 			- this.computeNodeHeight(Math.floor(pos_x/this.DIST_PER_NODE));
-		//var slope = 1 - 0.01 * height_diff;
-		//return Math.min(1.7, Math.max(0.3, slope));
-		return height_diff / this.DIST_PER_NODE;
+		var angle = Math.atan2(height_diff, this.DIST_PER_NODE);
+		var slope_factor = Math.cos(angle);
+		if(angle < 0) { slope_factor = 2 - slope_factor; }
+		return slope_factor;
 	}
 
 

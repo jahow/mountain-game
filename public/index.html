@@ -198,43 +198,6 @@ function refreshBackgroundShapes() {
 	previous_background_position_y = current_background_position_y;
 }
 
-/*
-// node_index must be an integer
-function computeNodeHeight(node_index) {
-	if(node_index <= 0) { return 0; }
-	return node_index * 10 + node_index * 5 * Math.cos(node_index * 2);
-}
-
-// interpolates between 2 nodes
-// pos_x is expressed in dist coordinates
-function computeHeight(pos_x) {
-	var node_low = Math.floor(pos_x/SEGMENT_SIZE);
-	var node_high = Math.ceil(pos_x/SEGMENT_SIZE);
-	var ratio = pos_x/SEGMENT_SIZE - node_low;	// between 0 and 1
-	return (1-ratio) * computeNodeHeight(node_low) + ratio * computeNodeHeight(node_high);
-}
-
-// build an array of height data for a range of nodes
-function computeHeightDataArray(min_node, max_node) {
-	var result = [];
-	for(var i=min_node; i<max_node; i++) {
-		result.push({
-			node: i,
-			start: computeNodeHeight(i),
-			end: computeNodeHeight(i+1)
-		});
-	}
-	return result;
-}
-
-// gives a factor between 0 and 2, 1 being a flat terrain
-function computeSlopeFactor(pos_x) {
-	var height_diff = computeNodeHeight(Math.ceil(pos_x/SEGMENT_SIZE)) - computeNodeHeight(Math.floor(pos_x/SEGMENT_SIZE));
-	var slope = 1 - 0.01 * height_diff;
-	return Math.min(1.7, Math.max(0.3, slope));
-}
-*/
-
 // clientside predictions
 this.computeHeightAndSlope = function(pos_x) {
 	var node = Math.floor(pos_x/SEGMENT_SIZE);
@@ -244,7 +207,11 @@ this.computeHeightAndSlope = function(pos_x) {
 	for(var i = 0; i < height_data.length; i++) {
 		if(Math.abs(height_data[i].node - node) > 0.01) { continue; }
 		height = (1-ratio) * height_data[i].start + ratio * height_data[i].end;
-		slope = (height_data[i].end - height_data[i].start) / SEGMENT_SIZE;
+
+		var height_diff = height_data[i].end - height_data[i].start;
+		var angle = Math.atan2(height_diff, SEGMENT_SIZE);
+		slope = Math.cos(angle);
+		if(angle < 0) { slope = 2 - slope; }
 		break;
 	}
 	return { height: height, slope: slope};
@@ -666,6 +633,8 @@ function updateGame(timestamp) {
 
 
 // GAME MENUS (login, signup...)
+
+
 
 
 
