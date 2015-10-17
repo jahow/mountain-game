@@ -33,9 +33,20 @@ app.use(express.static(__dirname + '/public'));
 
 // fetch gamestate from a spectator point of view
 app.get('/gamestate', function(req, res) {
-  console.log('gamestate requested from a spectator pov');
+  //console.log('gamestate requested from a spectator pov');
+
+  // build terrain data around beginning
+  // center is node number 5...
+  var node = 5;
+  var height_data = game_module.computeHeightDataArray(node);
+
+  // gather other players info
+  var player_list = game_module.getSurroundingPlayersData(node * game_module.DIST_PER_NODE);
+
+  // send back final object!
   res.json({
-    // TODO
+    height_data: height_data,
+    player_list: player_list
   });
 });
 
@@ -53,10 +64,7 @@ app.get('/gamestate/:player_id', function(req, res) {
 
   // build terrain data around player
   var nearest_node = Math.round(player_data.x_pos / game_module.DIST_PER_NODE);
-  var range = 10;
-  var min_node = nearest_node - range;
-  var max_node = nearest_node + range;
-  var height_data = game_module.computeHeightDataArray(min_node, max_node);
+  var height_data = game_module.computeHeightDataArray(nearest_node);
 
   // gather upgrade list
   //var upgrades = player_data.upgrades;

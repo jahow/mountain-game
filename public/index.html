@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="icon" type="image/ico" href="favicon.ico"/>
     <link href="style.css" rel="stylesheet" type="text/css">
-    <link href='https://fonts.googleapis.com/css?family=Open+Sans|Open+Sans+Condensed:300|Dosis:400,700|Abel|Roboto+Mono:400,500' rel='stylesheet' type='text/css'>
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700|Open+Sans+Condensed:300,700|Dosis:400,700|Abel|Roboto+Mono:400,500' rel='stylesheet' type='text/css'>
 
     <script src="jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js" charset="utf-8"></script>
@@ -104,6 +104,24 @@
 			</div>
 		</div>
 
+	</div>
+
+	<div id="menus">
+
+		<div class="menu start_menu">
+			<a>Créer un personnage</a>
+			<a>Continuer avec un personnage existant</a>
+		</div>
+
+		<div class="menu signup_menu">
+			<a>Créer un personnage</a>
+			<a>Continuer avec un personnage existant</a>
+		</div>
+
+		<div class="menu login_menu">
+			<a>Créer un personnage</a>
+			<a>Continuer avec un personnage existant</a>
+		</div>
 	</div>
 
 </body>
@@ -249,7 +267,8 @@ function computeLeftOffset(pos_x, previous) {
 // list of players data: x_pos (ie distance), momentum, id, portrait (filename)
 // this list is provided by the server
 // index 0 is the current player! (placeholder added)
-var current_player_id = 88;
+//var current_player_id = 88;
+var current_player_id = null;	// null means we're not logged in
 var players_array = [null];
 
 // list of dom objects relative to player portraits
@@ -339,7 +358,7 @@ function refreshPlayerPortraits() {
 			.css('margin-top', view_y - 20);
 		inside[0].setAttribute('viewBox', '-75 '+view_y+' 150 200');
 
-		if(i == 0) {
+		if(i == 0 && current_player_id) {
 			player_portrait.addClass('player_portrait');
 		} else {
 			player_portrait.removeClass('player_portrait');
@@ -591,36 +610,62 @@ function updateGame(timestamp) {
 	if(now - previous_update_time > UPDATE_PERIOD * 1000) {
 		previous_update_time = now;
 
-		// fetch data from the server
-		$.get("gamestate/"+current_player_id, function(data) {
+		if(current_player_id) {
 
-			// terrain
-			height_data = data.height_data;
+			// fetch data from the server
+			$.get("gamestate/"+current_player_id, function(data) {
 
-			// surrounding players (with current player at index 0)
-			players_array = data.player_list;
-			players_array.unshift(data.player_data);
+				// terrain
+				height_data = data.height_data;
 
-			// upgrades
-			upgrade_list = data.player_data.upgrades;
+				// surrounding players (with current player at index 0)
+				players_array = data.player_list;
+				players_array.unshift(data.player_data);
 
-			// other
-			steps_count = data.player_data.steps_count;
+				// upgrades
+				upgrade_list = data.player_data.upgrades;
 
-			// refreshes!
-			//refreshBackgroundShapes();
-			//refreshPlayerPortraits();
-			setBackgroundPosition(data.player_data.x_pos, data.player_data.alt);
-			refreshUpgrades();
+				// other
+				steps_count = data.player_data.steps_count;
 
-		}).fail(function(jqXHR, textStatus) {
-			console.log('an error happened when fetching gamestate: '+textStatus);
-		});
+				// refreshes!
+				//refreshBackgroundShapes();
+				//refreshPlayerPortraits();
+				setBackgroundPosition(data.player_data.x_pos, data.player_data.alt);
+				refreshUpgrades();
+
+			}).fail(function(jqXHR, textStatus) {
+				console.log('an error happened when fetching gamestate: '+textStatus);
+			});
+
+		} else {
+
+			// fetch data from the server
+			$.get("gamestate", function(data) {
+
+				// terrain
+				height_data = data.height_data;
+
+				// surrounding players
+				players_array = data.player_list;
+
+				var pos = 5 * SEGMENT_SIZE;
+				var alt = computeHeightAndSlope(pos).height;
+
+				setBackgroundPosition(pos, alt);
+
+			}).fail(function(jqXHR, textStatus) {
+				console.log('an error happened when fetching gamestate: '+textStatus);
+			});
+
+		}
 	}
 
 	window.requestAnimationFrame(updateGame);
 }
 
+
+// GAME MENUS (login, signup...)
 
 
 

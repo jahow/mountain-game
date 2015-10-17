@@ -337,3 +337,55 @@ header {
 		stroke-width: 8px;
 		stroke-linecap: round;
 	}
+
+
+/* MENUS */
+
+#menus {
+}
+
+	#menus .menu {
+		z-index: 100;
+		height: 500px;
+		width: 500px;
+		border-radius: 500px;
+		background-color: rgba(127, 164, 194, 0.84);
+		position: absolute;
+		top: calc(50% - 250px);
+		left: calc(50% - 250px);
+	    box-sizing: border-box;
+	    box-shadow: rgba(0, 0, 0, 0.44) 0px 0px 40px;
+	    border: 8px solid white;
+	}
+	#menus .menu a {
+		position: relative;
+	    text-align: center;
+		display: block;
+		padding: 10px;
+		background-color: white;
+		color: #7FA4C2;
+		border-radius: 12px;
+	    font-weight: bold;
+	}
+	#menus .menu a:hover:before {
+	    content: "";
+	    display: block;
+	    position: absolute;
+	    width: calc(100% - 16px);
+	    height: calc(100% - 16px);
+	    border-radius: 10px;
+	    border: 4px solid #7FA4C2;
+	    left: 4px;
+	    top: 4px;
+	}
+
+	#menus .menu.start_menu {
+	    padding: 122px;
+	}
+	#menus .menu.start_menu a {
+		cursor: pointer;
+		padding: 20px;
+	    margin-left: auto;
+	    margin-right: auto;
+	    margin-top: 28px;
+	}

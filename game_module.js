@@ -9,6 +9,7 @@ var game_module = function() {
 	this.ADVANCE_PER_CLICK = 2;	// how much meters per step (base)
 	this.BASE_WATER_CONSUMPTION = 0.002;		// how much water per step
 	this.MAX_UPGRADES = 4;
+	this.DISPLAY_RANGE = 10;	// number of terrain nodes displayed
 
 
 	// TERRAIN
@@ -29,7 +30,10 @@ var game_module = function() {
 	}
 
 	// build an array of height data for a range of nodes
-	this.computeHeightDataArray = function(min_node, max_node) {
+	this.computeHeightDataArray = function(node_center) {
+		var min_node = node_center - this.DISPLAY_RANGE;
+		var max_node = node_center + this.DISPLAY_RANGE;
+
 		var result = [];
 		for(var i=min_node; i<max_node; i++) {
 			result.push({
