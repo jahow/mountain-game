@@ -5,6 +5,7 @@ var app = express();
 
 var http = require('http').Server(app);
 var path = require('path');
+var formidable = require('formidable');
 
 var bodyParser = require('body-parser');
 app.use(bodyParser.json()); // support json encoded bodies
@@ -103,6 +104,28 @@ app.post('/action', function(req, res) {
 
 });
 
+// new player signing up
+app.post('/signup', function(req, res) {
+  console.log('new player signing up...');
+  console.dir(req.body);
+
+  var form = new formidable.IncomingForm();
+  form.parse(req, function(err, fields, files) {
+    console.log('fields:');
+    console.dir(fields);
+    console.log('files:');
+    console.dir(files);
+  });
+  
+  res.json( { registered_id: -1} );
+});
+
+// player logging in
+app.post('/login', function(req, res) {
+  console.log('player logging in...');
+  console.dir(req.body);
+  res.json( { registered_id: -1} );
+});
 
 app.use(function(req, res, next) {
   res.setHeader('Content-Type', 'text/plain');

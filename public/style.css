@@ -410,6 +410,22 @@ header {
 	    display: none;
 	}
 
+	#menus .back_to_start {
+		position: absolute;
+		cursor: pointer;
+		text-decoration: underline;
+		color: rgba(255,255,255,0.7);
+		width: 100%;
+		text-align: center;
+		bottom: 20px;
+		left: 0;
+		font-size: 1.2em;
+		font-family: 'open sans condensed';
+	}
+	#menus .back_to_start:hover {
+		color: white;
+	}
+
 #menus form {
 
 }
@@ -458,16 +474,20 @@ header {
 	    margin-right: auto;
 	    margin-top: 45px;
 	}
-	#menus form input[type="submit"]:hover {
+	#menus form input[type="submit"]:hover:not(.processing) {
 		margin-top: 43px;
 		box-shadow: rgb(89, 115, 136) 0px 2px 0px;
 		color: rgb(89, 115, 136);
 	}
-	#menus form input[type="submit"]:active {
+	#menus form input[type="submit"]:active:not(.processing) {
 		margin-top: 47px;
 		box-shadow: rgb(89, 115, 136) 0px -2px 0px;
 		color: rgb(89, 115, 136);
 		background-color: rgba(255, 255, 255, 0.75);
+	}
+	#menus form input[type="submit"].processing {
+		cursor: default;
+		opacity: 0.6;
 	}
 	#menus form input[type="file"] {
 		display: none;

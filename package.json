@@ -5,6 +5,7 @@
   "main"         : "server.js",
   "author"       : "Onirium Games",
   "dependencies" : {
-    "express"    : "*"
+    "express"    : "*",
+    "formidable" : "*"
   }
 }

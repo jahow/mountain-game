@@ -109,43 +109,45 @@
 	<div id="menus">
 
 		<div class="menu start_menu">
-			<a>Créer un personnage</a>
-			<a>Continuer avec un personnage existant</a>
+			<a class='goto_signup'>Créer un personnage</a>
+			<a class='goto_login'>Continuer avec un personnage existant</a>
 		</div>
 
 		<div class="menu signup_menu">
 			<form id="signup_form" >
 				<div class="row">
 					<label>Choisis un nom : </label>
-					<input type="text" name="name" />
+					<input type="text" name="name" id="name" />
 				</div>
 				<div class="row">
 					<label>Un portrait (optionnel) : </label>
-					<label for="signup_portrait" class="file_replacement">Choisir un fichier</label>
-					<input type="file" name="portrait" id="signup_portrait" />
+					<label for="portrait" class="file_replacement">Choisir un fichier</label>
+					<input type="file" name="portrait" id="portrait" />
 					<small>(JPG, GIF ou PNG, 60kB max)</small>
 				</div>
 				<div class="row">
 					<label>Et un mot secret : </label>
-					<input type="text" name="password" />
+					<input type="text" name="password" id="password" />
 					<small>(faudra s'en souvenir !)</small>
 				</div>
 				<input type="submit" value="Commencer !" />
 			</form>
+			<div class='back_to_start'>revenir</div>
 		</div>
 
 		<div class="menu login_menu">
 			<form id="login_form" >
 				<div class="row">
 					<label>Nom du perso : </label>
-					<input type="text" name="name" />
+					<input type="text" name="name" id="name" />
 				</div>
 				<div class="row">
 					<label>Mot secret : </label>
-					<input type="text" name="password" />
+					<input type="text" name="password" id="password" />
 				</div>
 				<input type="submit" value="Jouer !" />
 			</form>
+			<div class='back_to_start'>revenir</div>
 		</div>
 	</div>
 
@@ -659,7 +661,78 @@ function updateGame(timestamp) {
 
 // GAME MENUS (login, signup...)
 
+// by default, the start menu is displayed
+$('#menus .start_menu .goto_signup').click(function() {
+	var me = $(this);
+	$('#menus .start_menu').fadeOut();
+	$('#menus .signup_menu').fadeIn();
+});
+$('#menus .start_menu .goto_login').click(function() {
+	var me = $(this);
+	$('#menus .start_menu').fadeOut();
+	$('#menus .login_menu').fadeIn();
+});
+$('#menus .back_to_start').click(function() {
+	var me = $(this);
+	me.parent().fadeOut();
+	$('#menus .start_menu').fadeIn();
+});
 
+// submit buttons
+$('#signup_form').submit(function(evt) {
+	evt.preventDefault();
+	var me = $(this);
+	me.find('input[type="submit"]').addClass('processing').val('Envoi...').attr('disabled', true);
+
+	// uploading form info & portrait image
+	/*
+	var form_data = new FormData();
+	form_data.append("name", me.find('input[name="name"]').val());
+	form_data.append("password", me.find('input[name="password"]').val());
+
+	var file = me.find('input[name="portrait"]')[0].files[0];
+	if(file) { form_data.append("portrait", file, file.name); }
+	*/
+	var form_data = new FormData(this);
+/*
+	$.ajax({
+		url: '/signup',
+		type: 'POST',
+		data: form_data,
+		contentType: 'multipart/form-data',
+		processData: false,
+		success: function(data) {
+			// signup successful! switch to active player
+			var player_id = data.registered_id;
+			console.log("new player successfully registered! id="+player_id);
+			switchToPlayerId(player_id);
+    	}
+    });
+*/
+	var request = new XMLHttpRequest();
+	request.open('POST', '/signup');
+	request.onload = function(event) {
+	    if (request.status == 200) {
+			// signup successful! switch to active player
+			var data = JSON.parse(request.responseText);
+			var player_id = data.registered_id;
+			console.log('new player successfully registered! id='+player_id);
+			switchToPlayerId(player_id);
+	    } else {
+	    	console.log('error when registering new player: '
+	    		+request.status+' '+request.responseText);
+	    }
+	};
+	request.send(form_data);
+});
+$('#login_form').submit(function(evt) {
+	evt.preventDefault();
+});
+
+// switch to registered game state with a given id
+function switchToPlayerId(id) {
+
+}
 
 
 
