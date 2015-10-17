@@ -1,11 +1,12 @@
 {
-  "name"         : "mountain-game",
-  "version"      : "0.0.1",
-  "description"  : "refugedelaigle2016",
-  "main"         : "server.js",
-  "author"       : "Onirium Games",
-  "dependencies" : {
-    "express"    : "*",
-    "formidable" : "*"
+  "name": "mountain-game",
+  "version": "0.0.1",
+  "description": "refugedelaigle2016",
+  "main": "server.js",
+  "author": "Onirium Games",
+  "dependencies": {
+    "express": "*",
+    "formidable": "*",
+    "fs-extra": "^0.24.0"
   }
 }

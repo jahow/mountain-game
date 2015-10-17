@@ -238,7 +238,7 @@ this.computeHeightAndSlope = function(pos_x) {
 		var height_diff = height_data[i].end - height_data[i].start;
 		var angle = Math.atan2(height_diff, SEGMENT_SIZE);
 		slope = Math.cos(angle);
-		if(angle < 0) { slope = 2 - slope; }
+		if(angle < 0) { slope = 1; }
 		break;
 	}
 	return { height: height, slope: slope};
@@ -381,8 +381,8 @@ function makeStep(me) {
 	var advance = ADVANCE_PER_CLICK * (player_data.momentum+1);
 	//var slope = player_data.slope;
 	var height_slope = computeHeightAndSlope(player_data.x_pos);
-	player_data.x_pos += advance * (1 - height_slope.slope);
-	player_data.alt = height_slope.height;
+	player_data.x_pos += advance * height_slope.slope;
+	player_data.alt = computeHeightAndSlope(player_data.x_pos).height;
 
 	// focus BG 
 	setBackgroundPosition(player_data.x_pos, player_data.alt);
@@ -467,13 +467,13 @@ function refreshUpgrades(price_only) {
 
 	// first clean all dom objects if there is any discrepancy (fancy wooord)
 	var obj, type, cost, name;
-	for(var i=0; i<upgrades_dom.length && i<upgrade_list && !price_only; i++) {
+	for(var i=0; i<upgrades_dom.length && !price_only; i++) {
 		obj = $(upgrades_dom[i]);
-		type = upgrade_list[i].type;
-		cost = upgrade_list[i].cost;
 
 		// clear all
-		if(obj.attr('cost') != cost || obj.attr('type') != type) {
+		if(i >= upgrade_list.length
+			|| obj.attr('cost') != upgrade_list[i].cost
+			|| obj.attr('type') != upgrade_list[i].type) {
 			upgrades_dom.remove();
 			upgrades_dom = [];
 			break;
@@ -731,7 +731,8 @@ $('#login_form').submit(function(evt) {
 
 // switch to registered game state with a given id
 function switchToPlayerId(id) {
-
+	$('#menus').remove();
+	current_player_id = id;
 }
 
 

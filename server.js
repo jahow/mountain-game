@@ -6,6 +6,7 @@ var app = express();
 var http = require('http').Server(app);
 var path = require('path');
 var formidable = require('formidable');
+var fs = require('fs-extra');
 
 var bodyParser = require('body-parser');
 app.use(bodyParser.json()); // support json encoded bodies
@@ -107,24 +108,46 @@ app.post('/action', function(req, res) {
 // new player signing up
 app.post('/signup', function(req, res) {
   console.log('new player signing up...');
-  console.dir(req.body);
+  //console.dir(req.body);
 
-  var form = new formidable.IncomingForm();
-  form.parse(req, function(err, fields, files) {
-    console.log('fields:');
-    console.dir(fields);
-    console.log('files:');
-    console.dir(files);
-  });
+  var form = new formidable.IncomingForm();;
   
-  res.json( { registered_id: -1} );
+  form.parse(req, function(err, fields, files) {
+    var name = fields.name;
+    var password = fields.password;
+
+    var id = 88;  // temp
+    console.log('new player registered under id='+id);
+    res.json( { registered_id: id } );
+  });
+
+  form.on('end', function(fields, files) {
+
+    //file
+    var temp_path = this.openedFiles[0].path;
+    var file_name = this.openedFiles[0].name;
+    var new_location = __dirname + '/public/portraits/';
+    fs.copy(temp_path, new_location + file_name, function(err) {  
+      if (err) { console.error(err); }
+      else { console.log("portrait file copied to disk!"); }
+    });
+
+  });
+
 });
 
 // player logging in
 app.post('/login', function(req, res) {
   console.log('player logging in...');
-  console.dir(req.body);
-  res.json( { registered_id: -1} );
+
+  var form = new formidable.IncomingForm();
+  form.parse(req, function(err, fields, files) {
+    var name = fields.name;
+    var password = fields.password;
+    
+  });
+
+  res.json( { registered_id: 88} );
 });
 
 app.use(function(req, res, next) {

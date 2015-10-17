@@ -52,7 +52,7 @@ var game_module = function() {
 			- this.computeNodeHeight(Math.floor(pos_x/this.DIST_PER_NODE));
 		var angle = Math.atan2(height_diff, this.DIST_PER_NODE);
 		var slope_factor = Math.cos(angle);
-		if(angle < 0) { slope_factor = 2 - slope_factor; }
+		if(angle < 0) { slope_factor = 1; }
 		return slope_factor;
 	}
 
@@ -150,11 +150,11 @@ var game_module = function() {
 		// compute how much to advance
 		var advance = this.ADVANCE_PER_CLICK * (player_data.momentum+1);
 		var slope = this.computeSlopeFactor(player_data.x_pos);
-		player_data.x_pos += advance * (1 - slope);
+		player_data.x_pos += advance * slope;
 
 		// update alt & slope
 		player_data.alt = this.computeHeight(player_data.x_pos);
-		player_data.slope = slope;
+		//player_data.slope = slope;
 
 		// add footstep count
 		player_data.steps_count++;
@@ -222,7 +222,7 @@ var game_module = function() {
 			case 0:
 				player_data.x_pos += 10 + Math.floor(Math.random()*290);
 				player_data.alt = this.computeHeight(player_data.x_pos);
-				player_data.slope = this.computeSlopeFactor(player_data.x_pos);
+				//player_data.slope = this.computeSlopeFactor(player_data.x_pos);
 			break;
 			// élan
 			case 1: player_data.momentum++; break;
