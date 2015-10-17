@@ -114,13 +114,38 @@
 		</div>
 
 		<div class="menu signup_menu">
-			<a>Créer un personnage</a>
-			<a>Continuer avec un personnage existant</a>
+			<form id="signup_form" >
+				<div class="row">
+					<label>Choisis un nom : </label>
+					<input type="text" name="name" />
+				</div>
+				<div class="row">
+					<label>Un portrait (optionnel) : </label>
+					<label for="signup_portrait" class="file_replacement">Choisir un fichier</label>
+					<input type="file" name="portrait" id="signup_portrait" />
+					<small>(JPG, GIF ou PNG, 60kB max)</small>
+				</div>
+				<div class="row">
+					<label>Et un mot secret : </label>
+					<input type="text" name="password" />
+					<small>(faudra s'en souvenir !)</small>
+				</div>
+				<input type="submit" value="Commencer !" />
+			</form>
 		</div>
 
 		<div class="menu login_menu">
-			<a>Créer un personnage</a>
-			<a>Continuer avec un personnage existant</a>
+			<form id="login_form" >
+				<div class="row">
+					<label>Nom du perso : </label>
+					<input type="text" name="name" />
+				</div>
+				<div class="row">
+					<label>Mot secret : </label>
+					<input type="text" name="password" />
+				</div>
+				<input type="submit" value="Jouer !" />
+			</form>
 		</div>
 	</div>
 
