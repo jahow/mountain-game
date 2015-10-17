@@ -292,7 +292,7 @@ function refreshPlayerPortraits() {
 			//player_portrait.attr('id', player_data.id);
 			player_portrait.attr('id', null)
 			player_portrait.css({
-				'background-image': 'url('+player_data.portrait+')',
+				'background-image': 'url(portraits/'+player_data.portrait+')',
 				'border-color': player_data.color
 			});
 			player_portrait.find('.name')
@@ -324,6 +324,9 @@ function refreshPlayerPortraits() {
 		player_portrait.find('p')
 				.html('&nbspalt: '+player_data.alt.toFixed(0)+'m<br>dist: '+player_data.x_pos.toFixed(1)+'m');
 		//player_portrait.attr('index', i);
+
+		// portrait...
+		player_portrait.css({'background-image': 'url(portraits/'+player_data.portrait+')'});
 
 		// momentum arrow
 		if(player_data.momentum > 0) {

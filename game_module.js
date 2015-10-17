@@ -10,6 +10,8 @@ var game_module = function() {
 	this.BASE_WATER_CONSUMPTION = 0.002;		// how much water per step
 	this.MAX_UPGRADES = 4;
 	this.DISPLAY_RANGE = 10;	// number of terrain nodes displayed
+	this.MAX_FILE_SIZE = 60000;	// portrait size
+	this.FILE_EXT = ['png', 'gif', 'jpg', 'jpeg'];
 
 
 	// TERRAIN
@@ -67,7 +69,7 @@ var game_module = function() {
 		alt: 0,
 		// slope: 1,
 		momentum: 4,
-		id: 88,
+		id: 10,
 		name: 'oliv',
 		portrait: 'portrait1.jpg',
 		color: 'rgb(177, 97, 105)',
@@ -80,24 +82,11 @@ var game_module = function() {
 		alt: 0,
 		// slope: 1,
 		momentum: 8,
-		id: 2,
+		id: 20,
 		name: 'nico',
 		portrait: 'portrait2.jpg',
 		color: 'rgb(150, 112, 245)',
 		water: 0.3,
-		upgrades: [],
-		steps_count: 0
-	});
-	this.players_array.push({
-		x_pos: 72,
-		alt: 0,
-		// slope: 1,
-		momentum: 0,
-		id: 4,
-		name: 'bob',
-		portrait: '',
-		color: 'rgb(150, 112, 245)',
-		water: 0.1,
 		upgrades: [],
 		steps_count: 0
 	});
@@ -235,7 +224,77 @@ var game_module = function() {
 
 		return true;
 	}
+
+
+	// AUTHENTICATION
+
+	// Returns the id of the registered player
+	this.registerNewPlayer = function(name, password) {
+		var id = this.getUniqueId();
+		var name_safe = sanitizeName(name);
+		var color = getRandomCSSColor();
+
+		this.players_array.push({
+			x_pos: 0,
+			alt: 0,
+			momentum: 0,
+			id: id,
+			name: name_safe,
+			portrait: '',		// waiting for file...
+			color: color,
+			water: 1,
+			upgrades: [],
+			steps_count: 0
+		});
+
+		console.log('new player "'+name_safe+'" registered under id='+id);
+		return id;
+	}
+
+	// self expl
+	this.getUniqueId = function() {
+		var higher_id = 0;
+		for(var i=0; i<this.players_array.length; i++) {
+			if(this.players_array[i].id >= higher_id) {
+				higher_id = this.players_array[i].id + 1;
+			}
+		}
+		return higher_id
+	}
 };
 
 
 module.exports = new game_module();
+
+
+// utils
+
+function sanitizeName(s) {
+	return s.toLowerCase().replace(/[^a-zA-Z0-9\-_éèïüöç!?.]+/g, "");
+}
+
+function getRandomCSSColor() {
+	var h = Math.random();
+	var v = 0.7;
+	var s = 0.72;
+
+	// HSV to RGB conversion, as seen here: http://axonflux.com/handy-rgb-to-hsl-and-rgb-to-hsv-color-model-c
+    var r, g, b, i, f, p, q, t;
+    i = Math.floor(h * 6);
+    f = h * 6 - i;
+    p = v * (1 - s);
+    q = v * (1 - f * s);
+    t = v * (1 - (1 - f) * s);
+    switch (i % 6) {
+        case 0: r = v, g = t, b = p; break;
+        case 1: r = q, g = v, b = p; break;
+        case 2: r = p, g = v, b = t; break;
+        case 3: r = p, g = q, b = v; break;
+        case 4: r = t, g = p, b = v; break;
+        case 5: r = v, g = p, b = q; break;
+    }
+
+    function toHex(c) { return Math.floor(c*255).toString(16); }
+
+    return "#"+toHex(r)+toHex(g)+toHex(b);
+}

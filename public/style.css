@@ -152,11 +152,12 @@ header {
 		position: relative;
 		content: "";
 		display: block;
-	    width: 80px;
-	    height: 80px;
+	    width: 74px;
+	    height: 74px;
     	border-radius: 100px;
 	    /*background-color: white;*/
-	    box-shadow: inset white 0px 0px 19px; 
+	    /*box-shadow: inset white 0px 0px 19px; */
+	    border: 3px solid white;
 	    opacity: 0;
 	    transition: opacity 0.2s ease-in-out;
 	}

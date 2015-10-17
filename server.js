@@ -110,14 +110,17 @@ app.post('/signup', function(req, res) {
   console.log('new player signing up...');
   //console.dir(req.body);
 
-  var form = new formidable.IncomingForm();;
+  var form = new formidable.IncomingForm();
+  var registered_id = -1;
   
   form.parse(req, function(err, fields, files) {
     var name = fields.name;
     var password = fields.password;
+    var portrait = "default.png";
+    if(files.length > 0) { portrait = files[0].name; }
 
-    var id = 88;  // temp
-    console.log('new player registered under id='+id);
+    var id = game_module.registerNewPlayer(name, password, portrait);
+    registered_id = id;
     res.json( { registered_id: id } );
   });
 
@@ -125,11 +128,12 @@ app.post('/signup', function(req, res) {
 
     //file
     var temp_path = this.openedFiles[0].path;
-    var file_name = this.openedFiles[0].name;
+    var new_filename = Math.floor(Math.random()*1000000).toString();
     var new_location = __dirname + '/public/portraits/';
-    fs.copy(temp_path, new_location + file_name, function(err) {  
-      if (err) { console.error(err); }
-      else { console.log("portrait file copied to disk!"); }
+    fs.copy(temp_path, new_location + new_filename, function(err) {  
+      if (err) { console.error(err); return; }
+      console.log("portrait file copied to disk!");
+      game_module.getPlayerData(registered_id).portrait = new_filename;
     });
 
   });
