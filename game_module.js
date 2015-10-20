@@ -41,6 +41,13 @@ var game_module = function() {
 	this.init = function() {
 
 		// TODO: fetch player model
+		playerModel.find({}).exec(function(err, result) {
+			if (!err) {
+				instance.players_array = result;
+			} else {
+				console.log('couldn\'t fetch player list...');
+			};
+		});
 
 		console.log('game initialized.');
 	}
@@ -102,7 +109,7 @@ var game_module = function() {
 
 	// this is an array of MongoDB objects!
 	this.players_array = [];
-
+/*
 	// temp
 	this.players_array.push({
 		x_pos: 35,
@@ -130,6 +137,7 @@ var game_module = function() {
 		upgrades: [],
 		steps_count: 0
 	});
+*/
 
 	// return the data object for a specific player
 	// if new_object is set, the original MongoDB object is not returned
