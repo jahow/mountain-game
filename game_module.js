@@ -1,3 +1,24 @@
+// NOISE
+var noisejs = require('noisejs');
+var noise = new noisejs.Noise(Math.random());
+
+// DATABASE
+var mongoose = require('./database');
+var playerSchema = new mongoose.Schema({
+	// id: Number,
+	name: String,
+	password: String,
+	x_pos: {type: Number, default: 0},
+	alt: {type: Number, default: 0},
+	momentum: {type: Number, default: 0},
+	portrait: {type: String, default: ''},
+	color: String,
+	water: {type: Number, default: 1},
+	upgrades: { type : Array },
+	steps_count: {type: Number, default: 0}
+});
+var playerModel = mongoose.model('players', playerSchema);
+
 
 // holds all players data
 var game_module = function() {
@@ -14,12 +35,30 @@ var game_module = function() {
 	this.FILE_EXT = ['png', 'gif', 'jpg', 'jpeg'];
 
 
+	// EVENTS
+
+	// fetches all players object from DB
+	this.init = function() {
+
+		// TODO: fetch player model
+
+		console.log('game initialized.');
+	}
+
+	// saves player objects on DB
+	this.save = function() {
+		// TODO: save player model
+	}
+
+
+
 	// TERRAIN
 
 	// node_index must be an integer
 	this.computeNodeHeight = function(node_index) {
 		if(node_index <= 0) { return 0; }
-		return node_index * 10 + node_index * 5 * Math.cos(node_index * 2);
+		//return node_index * 10 + node_index * 5 * Math.cos(node_index * 2);
+		return node_index * 10 + 50 * noise.perlin2(node_index*0.72, 100);
 	}
 
 	// interpolates between 2 nodes
@@ -61,6 +100,7 @@ var game_module = function() {
 
 	// PLAYERS
 
+	// this is an array of MongoDB objects!
 	this.players_array = [];
 
 	// temp
@@ -69,7 +109,7 @@ var game_module = function() {
 		alt: 0,
 		// slope: 1,
 		momentum: 4,
-		id: 10,
+		_id: 10,
 		name: 'oliv',
 		portrait: 'portrait1.jpg',
 		color: 'rgb(177, 97, 105)',
@@ -82,7 +122,7 @@ var game_module = function() {
 		alt: 0,
 		// slope: 1,
 		momentum: 8,
-		id: 20,
+		_id: 20,
 		name: 'nico',
 		portrait: 'portrait2.jpg',
 		color: 'rgb(150, 112, 245)',
@@ -92,30 +132,47 @@ var game_module = function() {
 	});
 
 	// return the data object for a specific player
-	this.getPlayerData = function(id) {
+	// if new_object is set, the original MongoDB object is not returned
+	this.getPlayerData = function(id, new_object) {
+		var data = null;
 		for(var i=0; i<this.players_array.length; i++) {
-			if(this.players_array[i].id == id) { return this.players_array[i]; }
+			if(this.players_array[i]._id == id) { data = this.players_array[i]; }
 		}
-		return null;	// error!
+		if(!data) { return null; }
+
+		if(!new_object) { return data; }
+
+		return {
+			id: data._id,
+			x_pos: data.x_pos,
+			alt: data.alt,
+			momentum: data.momentum,
+			name: data.name,
+			portrait: data.portrait,
+			color: data.color,
+			water: data.water,
+			upgrades: data.upgrades,
+			steps_count: data.steps_count
+		};
 	}
 
-	// return restrained data (no upgrades...) for surrounding players
+	// return restrained data (no upgrades & steps count) for surrounding players
 	this.getSurroundingPlayersData = function(x_pos, skip_id) {
 		var result = [];
 		var range = 2000;
 		var data;
 		for(var i=0; i<this.players_array.length; i++) {
-			// skip active player
-			if(this.players_array[i].id == skip_id) { continue; }
-
 			data = this.players_array[i];
+
+			// skip active player
+			if(data._id == skip_id) { continue; }
 
 			// skip if too far away
 			if(Math.abs(data.x_pos - x_pos) > range) { continue; }
 
 			// add info to result
 			result.push({
-				id: data.id,
+				id: data._id,
 				x_pos: data.x_pos,
 				alt: data.alt,
 				momentum: data.momentum,
@@ -229,7 +286,96 @@ var game_module = function() {
 	// AUTHENTICATION
 
 	// Returns the id of the registered player
-	this.registerNewPlayer = function(name, password) {
+	this.registerNewPlayer = function(name, password, portrait, callback) {
+
+		var name_safe = sanitizeName(name);
+		var color = getRandomCSSColor();
+
+		var player = new playerModel({
+			// id: 1,
+			name: name_safe,
+			password: password,
+			color: color,
+			x_pos: 0,
+			momentum: 0,
+			portrait: portrait,
+			water: 1,
+			upgrades: [],
+			steps_count: 0,
+			/*
+			x_pos: Number,
+			momentum: Number,
+			portrait: String,
+			color: String,
+			water: Number,
+			upgrades: String,
+			steps_count: Number
+			*/
+	    });
+
+    	player.save(function(err, player) {
+    		if(err) {
+    			console.log('mongoose: error when saving new player: '+err);
+    			callback(err, null);
+    			return;
+    		}
+    		callback(null, player._id);
+    		console.log('new player "'+player.name+'" registered under id='+player._id);
+
+    		/*
+			instance.players_array.push({
+				x_pos: 0,
+				alt: 0,
+				momentum: 0,
+				id: player._id,
+				name: player.name,
+				portrait: '',		// waiting for file...
+				color: player.color,
+				water: 1,
+				upgrades: [],
+				steps_count: 0
+			});
+			*/
+			instance.players_array.push(player);
+    	});
+
+    	/*
+		var id = this.getUniqueId();
+		var name_safe = sanitizeName(name);
+		var color = getRandomCSSColor();
+
+		this.players_array.push({
+			x_pos: 0,
+			alt: 0,
+			momentum: 0,
+			id: id,
+			name: name_safe,
+			portrait: '',		// waiting for file...
+			color: color,
+			water: 1,
+			upgrades: [],
+			steps_count: 0
+		});
+
+		console.log('new player "'+name_safe+'" registered under id='+id);
+		return id;
+		*/
+	}
+
+	// self expl : handled by the database
+	/*
+	this.getUniqueId = function() {
+		var higher_id = 0;
+		for(var i=0; i<this.players_array.length; i++) {
+			if(this.players_array[i].id >= higher_id) {
+				higher_id = this.players_array[i].id + 1;
+			}
+		}
+		return higher_id
+	}
+	*/
+
+	this.tryLogin = function(name, password, callback) {
 		var id = this.getUniqueId();
 		var name_safe = sanitizeName(name);
 		var color = getRandomCSSColor();
@@ -250,21 +396,11 @@ var game_module = function() {
 		console.log('new player "'+name_safe+'" registered under id='+id);
 		return id;
 	}
-
-	// self expl
-	this.getUniqueId = function() {
-		var higher_id = 0;
-		for(var i=0; i<this.players_array.length; i++) {
-			if(this.players_array[i].id >= higher_id) {
-				higher_id = this.players_array[i].id + 1;
-			}
-		}
-		return higher_id
-	}
 };
 
 
 module.exports = new game_module();
+var instance = module.exports;
 
 
 // utils

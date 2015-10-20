@@ -298,6 +298,7 @@ function refreshPlayerPortraits() {
 			player_portrait.attr('id', null)
 			player_portrait.css({
 				// 'background-image': 'url(portraits/'+player_data.portrait+')',
+				'background-image': 'url(portraits/default.png)',
 				'border-color': player_data.color
 			});
 			player_portrait.find('.name')
@@ -653,7 +654,7 @@ function updateGame(timestamp) {
 				// surrounding players
 				players_array = data.player_list;
 
-				var pos = 5 * SEGMENT_SIZE;
+				var pos = 2 * SEGMENT_SIZE;
 				var alt = computeHeightAndSlope(pos).height;
 
 				setBackgroundPosition(pos, alt);
@@ -722,15 +723,17 @@ $('#signup_form').submit(function(evt) {
 	var request = new XMLHttpRequest();
 	request.open('POST', '/signup');
 	request.onload = function(event) {
-	    if (request.status == 200) {
+	    //if (request.status == 200) {
+	   	var data = JSON.parse(request.responseText);
+	    if(data.registered_id) {
 			// signup successful! switch to active player
 			var data = JSON.parse(request.responseText);
 			var player_id = data.registered_id;
 			console.log('new player successfully registered! id='+player_id);
 			switchToPlayerId(player_id);
-	    } else {
+	    } else if(data.error) {
 	    	console.log('error when registering new player: '
-	    		+request.status+' '+request.responseText);
+	    		+request.status+' '+data.error);
 	    }
 	};
 	request.send(form_data);

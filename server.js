@@ -38,8 +38,8 @@ app.get('/gamestate', function(req, res) {
   //console.log('gamestate requested from a spectator pov');
 
   // build terrain data around beginning
-  // center is node number 5...
-  var node = 5;
+  // center is node number 2...
+  var node = 2;
   var height_data = game_module.computeHeightDataArray(node);
 
   // gather other players info
@@ -58,7 +58,7 @@ app.get('/gamestate/:player_id', function(req, res) {
   //console.log('gamestate requested from player id='+player_id);
 
   // fetch player data
-  var player_data = game_module.getPlayerData(player_id);
+  var player_data = game_module.getPlayerData(player_id, true);
   if(!player_data) {
     res.status(404).send('invalid player id');  
     return;
@@ -111,32 +111,50 @@ app.post('/signup', function(req, res) {
   //console.dir(req.body);
 
   var form = new formidable.IncomingForm();
-  var registered_id = -1;
+  //var registered_id = -1;
+  var portrait_name = '';
   
   form.parse(req, function(err, fields, files) {
     var name = fields.name;
     var password = fields.password;
-    var portrait = "default.png";
-    if(files.length > 0) { portrait = files[0].name; }
 
-    var id = game_module.registerNewPlayer(name, password, portrait);
-    registered_id = id;
-    res.json( { registered_id: id } );
+    // determine the portrait name
+    if(files.portrait.size != 0) {
+      var ext = files.portrait.name.split('.');
+      ext = ext[ext.length-1];
+      portrait_name = Math.floor(Math.random()*1000000).toString()+'.'+ext;
+    }
+
+    game_module.registerNewPlayer(name, password, portrait_name, function(err, id) {
+      if(err) {
+        res.json( { error: err} );
+      }
+      //registered_id = id;
+      res.json( { registered_id: id} );
+    });
+
+
   });
 
   form.on('end', function(fields, files) {
 
+    //console.dir(this.openedFiles);
+    if(this.openedFiles[0].size == 0) {
+      console.log("no portrait file given.");
+      return;
+    }
+
     //file
     var temp_path = this.openedFiles[0].path;
-    var new_filename = Math.floor(Math.random()*1000000).toString();
     var new_location = __dirname + '/public/portraits/';
-    fs.copy(temp_path, new_location + new_filename, function(err) {  
+
+    fs.copy(temp_path, new_location + portrait_name, function(err) {  
       if (err) { console.error(err); return; }
       console.log("portrait file copied to disk!");
-      game_module.getPlayerData(registered_id).portrait = new_filename;
     });
 
   });
+
 
 });
 
@@ -149,9 +167,14 @@ app.post('/login', function(req, res) {
     var name = fields.name;
     var password = fields.password;
     
+    game_module.tryLogin(name, password, function(err, id) {
+      if(error) {
+        res.json( { error: error} );
+      }
+      res.json( { registered_id: id} );
+    });
   });
 
-  res.json( { registered_id: 88} );
 });
 
 app.use(function(req, res, next) {
@@ -168,4 +191,6 @@ var server = http.listen(8080, function () {
   var port = server.address().port;
 
   console.log('listening on %s', port);
+
+  game_module.init();
 });
