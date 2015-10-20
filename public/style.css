@@ -34,6 +34,21 @@ header {
 	    font-family: open sans;
 	}
 
+footer {
+	position: absolute;
+	width: 100%;
+	bottom: 3px;
+	text-align: center;
+	color: rgba(255, 255, 255, 0.75);
+	font-size: 0.8em;
+	text-shadow: 0px 2px 3px rgba(0, 0, 0, 0.55);
+}
+	footer a {
+		color: rgba(255, 255, 255, 0.75);
+	}
+	footer a:hover {
+		color: white;
+	}
 
 /* GAME VIEW */
 

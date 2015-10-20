@@ -149,7 +149,12 @@
 			</form>
 			<div class='back_to_start'>revenir</div>
 		</div>
+
 	</div>
+
+	<footer>
+		Réalisé par <a href="www.onirium-games.com">Onirium Games</a> - <a href="https://github.com/jahow/mountain-game">code source</a> - <a href="http://www.refugedelaigle.fr/">c'est quoi le refuge de l'aigle ??</a>
+	</footer>
 
 </body>
 
@@ -292,7 +297,7 @@ function refreshPlayerPortraits() {
 			//player_portrait.attr('id', player_data.id);
 			player_portrait.attr('id', null)
 			player_portrait.css({
-				'background-image': 'url(portraits/'+player_data.portrait+')',
+				// 'background-image': 'url(portraits/'+player_data.portrait+')',
 				'border-color': player_data.color
 			});
 			player_portrait.find('.name')
@@ -326,7 +331,9 @@ function refreshPlayerPortraits() {
 		//player_portrait.attr('index', i);
 
 		// portrait...
-		player_portrait.css({'background-image': 'url(portraits/'+player_data.portrait+')'});
+		if(player_data.portrait != '') {
+			player_portrait.css({'background-image': 'url(portraits/'+player_data.portrait+')'});
+		}
 
 		// momentum arrow
 		if(player_data.momentum > 0) {
