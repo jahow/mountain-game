@@ -5,6 +5,7 @@
   "main": "server.js",
   "author": "Onirium Games",
   "dependencies": {
+    "bcrypt-nodejs": "0.0.3",
     "express": "*",
     "formidable": "*",
     "fs-extra": "^0.24.0",

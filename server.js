@@ -113,10 +113,17 @@ app.post('/signup', function(req, res) {
   var form = new formidable.IncomingForm();
   //var registered_id = -1;
   var portrait_name = '';
+  var cancelled = false;
   
   form.parse(req, function(err, fields, files) {
     var name = fields.name;
     var password = fields.password;
+
+    if(!name || !password) {
+      res.json( { error: 'missing form fields.' } );
+      cancelled = true;
+      return;
+    }
 
     // determine the portrait name
     if(files.portrait.size != 0) {
@@ -126,17 +133,15 @@ app.post('/signup', function(req, res) {
     }
 
     game_module.registerNewPlayer(name, password, portrait_name, function(err, id) {
-      if(err) {
-        res.json( { error: err} );
-      }
-      //registered_id = id;
-      res.json( { registered_id: id} );
+      if(err) { res.json( { error: err } ); return; }
+      res.json( { registered_id: id } );
     });
-
 
   });
 
   form.on('end', function(fields, files) {
+
+    if(cancelled) { return; }
 
     //console.dir(this.openedFiles);
     if(this.openedFiles[0].size == 0) {
@@ -166,12 +171,16 @@ app.post('/login', function(req, res) {
   form.parse(req, function(err, fields, files) {
     var name = fields.name;
     var password = fields.password;
+
+    if(!name || !password) {
+      res.json( { error: 'missing form fields.' } );
+      cancelled = true;
+      return;
+    }
     
     game_module.tryLogin(name, password, function(err, id) {
-      if(error) {
-        res.json( { error: error} );
-      }
-      res.json( { registered_id: id} );
+      if(err) { res.json( { error: err } ); return; }
+      res.json( { registered_id: id } );
     });
   });
 

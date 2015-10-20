@@ -442,6 +442,39 @@ footer {
 		color: white;
 	}
 
+#error_menu {
+    z-index: 200;
+    height: 300px;
+    width: 300px;
+    border-radius: 500px;
+    background-color: rgb(230, 62, 62);
+    position: absolute;
+    top: calc(50% - 150px);
+    left: calc(50% - 150px);
+    box-sizing: border-box;
+    box-shadow: rgba(0, 0, 0, 0.25) 0px 7px 30px;
+    border: 8px solid #FFFFFF;
+    color: white;
+    display: none;
+    padding: 100px 50px 100px 50px;
+    text-align: center;
+}
+	#error_menu .close {
+		position: absolute;
+		cursor: pointer;
+		text-decoration: underline;
+		color: rgba(255,255,255,0.7);
+		width: 100%;
+		text-align: center;
+		bottom: 20px;
+		left: 0;
+		font-size: 1.2em;
+		font-family: 'open sans condensed';
+	}
+	#error_menu .close:hover {
+		color: white;
+	}
+
 #menus form {
 
 }

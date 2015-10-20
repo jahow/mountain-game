@@ -2,22 +2,47 @@
 var noisejs = require('noisejs');
 var noise = new noisejs.Noise(Math.random());
 
+// ENCRYPTION
+var bcrypt = require('bcrypt-nodejs');
+var SALT_WORK_FACTOR = 10;
+
+
 // DATABASE
 var mongoose = require('./database');
 var playerSchema = new mongoose.Schema({
-	// id: Number,
-	name: String,
-	password: String,
-	x_pos: {type: Number, default: 0},
-	alt: {type: Number, default: 0},
-	momentum: {type: Number, default: 0},
-	portrait: {type: String, default: ''},
-	color: String,
-	water: {type: Number, default: 1},
+	name: { type: String, required: true, index: { unique: true } },
+	password: { type: String, required: true },
+	x_pos: { type: Number, default: 0 },
+	alt: { type: Number, default: 0 },
+	momentum: { type: Number, default: 0 },
+	portrait: { type: String, default: '' },
+	color: { type: String, default: '' },
+	water: { type: Number, default: 1 },
 	upgrades: { type : Array },
-	steps_count: {type: Number, default: 0}
+	steps_count: { type: Number, default: 0 }
 });
 var playerModel = mongoose.model('players', playerSchema);
+
+playerSchema.pre('save', function(next) {
+	var user = this;
+	// only hash the password if it has been modified (or is new)
+	if(!user.isModified('password')) { return next(); }
+
+	// generate a salt
+	bcrypt.genSalt(SALT_WORK_FACTOR, function(err, salt) {
+	    if(err) return next(err);
+
+	    // hash the password along with our new salt
+	    bcrypt.hash(user.password, salt, null, function(err, hash) {
+	        if(err) return next(err);
+
+	        // override the cleartext password with the hashed one
+	        user.password = hash;
+	        next();
+	    });
+	});
+});
+
 
 
 // holds all players data
@@ -384,25 +409,24 @@ var game_module = function() {
 	*/
 
 	this.tryLogin = function(name, password, callback) {
-		var id = this.getUniqueId();
-		var name_safe = sanitizeName(name);
-		var color = getRandomCSSColor();
+		playerModel.find({name: name}).exec(function(err, result) {
+			if(err) { callback('login failed: '+err, null); return; }
 
-		this.players_array.push({
-			x_pos: 0,
-			alt: 0,
-			momentum: 0,
-			id: id,
-			name: name_safe,
-			portrait: '',		// waiting for file...
-			color: color,
-			water: 1,
-			upgrades: [],
-			steps_count: 0
+			if(result.length == 0) {
+				callback('login failed, name invalid!', null);
+				return;
+			}
+
+			// test password!
+			bcrypt.compare(password, result[0].password, function(err, isMatch) {
+				if(err) { callback('login failed: '+err, null); return; }
+				else if(!isMatch) { callback('login failed, password invalid!', null); return; }
+				
+				callback(null, result[0]._id);
+				console.log('player "'+result[0].name+'" (id='+result[0].id+') just logged in');
+			});
+
 		});
-
-		console.log('new player "'+name_safe+'" registered under id='+id);
-		return id;
 	}
 };
 

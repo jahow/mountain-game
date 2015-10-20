@@ -152,6 +152,11 @@
 
 	</div>
 
+	<div id="error_menu">
+		<span></span>
+		<a class="close">Fermer</a>
+	</div>
+
 	<footer>
 		Réalisé par <a href="www.onirium-games.com">Onirium Games</a> - <a href="https://github.com/jahow/mountain-game">code source</a> - <a href="http://www.refugedelaigle.fr/">c'est quoi le refuge de l'aigle ??</a>
 	</footer>
@@ -693,7 +698,9 @@ $('#menus .back_to_start').click(function() {
 $('#signup_form').submit(function(evt) {
 	evt.preventDefault();
 	var me = $(this);
-	me.find('input[type="submit"]').addClass('processing').val('Envoi...').attr('disabled', true);
+	var button = me.find('input[type="submit"]');
+	button.data('default', button.val())
+		.addClass('processing').val('Envoi...').attr('disabled', true);
 
 	// uploading form info & portrait image
 	/*
@@ -727,19 +734,47 @@ $('#signup_form').submit(function(evt) {
 	   	var data = JSON.parse(request.responseText);
 	    if(data.registered_id) {
 			// signup successful! switch to active player
-			var data = JSON.parse(request.responseText);
 			var player_id = data.registered_id;
 			console.log('new player successfully registered! id='+player_id);
 			switchToPlayerId(player_id);
 	    } else if(data.error) {
-	    	console.log('error when registering new player: '
-	    		+request.status+' '+data.error);
+	    	console.log('error when registering new player: '+request.status+' '+data.error);
+	    	displayError(data.error);
+	    	var button = me.find('input[type="submit"]');
+	    	button.removeClass('processing')
+	    		.val(button.data('default'))
+	    		.attr('disabled', false);
 	    }
 	};
 	request.send(form_data);
 });
 $('#login_form').submit(function(evt) {
 	evt.preventDefault();
+	var me = $(this);
+	var button = me.find('input[type="submit"]');
+	button.data('default', button.val())
+		.addClass('processing').val('Envoi...').attr('disabled', true);
+
+	var form_data = new FormData(this);
+	var request = new XMLHttpRequest();
+	request.open('POST', '/login');
+	request.onload = function(event) {
+	   	var data = JSON.parse(request.responseText);
+	    if(data.registered_id) {
+			// login successful! switch to active player
+			var player_id = data.registered_id;
+			console.log('logged in successfully under id='+player_id);
+			switchToPlayerId(player_id);
+	    } else if(data.error) {
+	    	console.log('error when logging in: '+request.status+' '+data.error);
+	    	displayError(data.error);
+	    	var button = me.find('input[type="submit"]');
+	    	button.removeClass('processing')
+	    		.val(button.data('default'))
+	    		.attr('disabled', false);
+	    }
+	};
+	request.send(form_data);
 });
 
 // switch to registered game state with a given id
@@ -748,6 +783,16 @@ function switchToPlayerId(id) {
 	current_player_id = id;
 }
 
+
+// ERROR
+
+function displayError(error) {
+	$('#error_menu').show();
+	$('#error_menu span').html('Erreur :<br>'+error);
+}
+$('#error_menu .close').click(function() {
+	$(this).parent().hide();
+});
 
 
 
