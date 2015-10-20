@@ -1,6 +1,6 @@
 // NOISE
 var noisejs = require('noisejs');
-var noise = new noisejs.Noise(Math.random());
+var noise = new noisejs.Noise(10);
 
 // ENCRYPTION
 var bcrypt = require('bcrypt-nodejs');
@@ -90,7 +90,7 @@ var game_module = function() {
 	this.computeNodeHeight = function(node_index) {
 		if(node_index <= 0) { return 0; }
 		//return node_index * 10 + node_index * 5 * Math.cos(node_index * 2);
-		return node_index * 10 + 50 * noise.perlin2(node_index*0.72, 100);
+		return node_index * 10 + 70 * noise.perlin2(node_index*1.2, 100);
 	}
 
 	// interpolates between 2 nodes
