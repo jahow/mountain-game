@@ -8,7 +8,7 @@ var SALT_WORK_FACTOR = 10;
 
 
 // DATABASE
-var mongoose = require('./database');
+var mongoose = require('mongoose');
 var playerSchema = new mongoose.Schema({
 	name: { type: String, required: true, index: { unique: true } },
 	password: { type: String, required: true },

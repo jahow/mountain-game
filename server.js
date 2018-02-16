@@ -12,6 +12,7 @@ var bodyParser = require('body-parser');
 app.use(bodyParser.json()); // support json encoded bodies
 app.use(bodyParser.urlencoded({ extended: true })); // support encoded bodies
 
+var connection = require('./database');
 var game_module = require('./game_module');
 
 /*
