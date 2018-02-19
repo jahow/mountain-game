@@ -21,10 +21,11 @@ var playerSchema = new mongoose.Schema({
 	upgrades: { type : Array },
 	steps_count: { type: Number, default: 0 }
 });
-var playerModel = mongoose.model('players', playerSchema);
 
 playerSchema.pre('save', function(next) {
 	var user = this;
+	console.log('pre save event for user: ', user);
+	
 	// only hash the password if it has been modified (or is new)
 	if(!user.isModified('password')) { return next(); }
 
@@ -37,13 +38,15 @@ playerSchema.pre('save', function(next) {
 	        if(err) return next(err);
 
 	        // override the cleartext password with the hashed one
-	        user.password = hash;
+	        console.log('overriding password with hash: ' + user.password + ' -> ' + hash);
+		user.password = hash;
 	        next();
 	    });
 	});
 });
 
 
+var playerModel = mongoose.model('players', playerSchema);
 
 // holds all players data
 var game_module = function() {
@@ -418,6 +421,7 @@ var game_module = function() {
 			}
 
 			// test password!
+			console.log('comparing passwords w/ bcrypt: ' + password + ' ' + result[0].password);
 			bcrypt.compare(password, result[0].password, function(err, isMatch) {
 				if(err) { callback('login failed: '+err, null); return; }
 				else if(!isMatch) { callback('login failed, password invalid!', null); return; }
